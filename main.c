@@ -7,7 +7,7 @@ static Camera _cam_get(void)
 {
     Camera cam = {};
 
-    cam.position = (Vector3){6, 6, 6};
+    cam.position = (Vector3){13, 13, 13};
     cam.target = (Vector3){};
     cam.up = (Vector3){0, 1, 0};
     cam.fovy = 45;
@@ -27,7 +27,6 @@ void Cam_rotv(Camera3D * cam, float x)
 }
 
 #define HALF_SIZE 1
-#define NSIDES 6
 
 typedef enum
 {
@@ -67,77 +66,88 @@ typedef struct
     Model   side_models[CLR_$];
     Vector3 side_pos[CLR_$];
     CLR     side_colors[CLR_$];
-}   Cube;
+}   Block;
 
-void Cube_init(Cube * cube, Vector3 center, const char * clr_str)
+void Block_init(Block * block, Vector3 center, const char * clr_str)
 {
     Mesh    mesh;
+    Matrix  f;
 
-    * cube = (Cube) {};
+    * block = (Block) {};
     mesh = GenMeshPoly(4, (HALF_SIZE * 2) / sqrt(2));
 
-    cube->center = center;
+    block->center = center;
 
-    cube->side_pos[CLR_R] = Vector3Add(center, (Vector3){0, 0, HALF_SIZE});
-    cube->side_pos[CLR_B] = Vector3Add(center, (Vector3){-HALF_SIZE, 0, 0});
-    cube->side_pos[CLR_O] = Vector3Add(center, (Vector3){0, 0, -HALF_SIZE});
-    cube->side_pos[CLR_G] = Vector3Add(center, (Vector3){HALF_SIZE, 0, 0});
-    cube->side_pos[CLR_Y] = Vector3Add(center, (Vector3){0, HALF_SIZE, 0});
-    cube->side_pos[CLR_W] = Vector3Add(center, (Vector3){0, -HALF_SIZE, 0});
+    block->side_pos[CLR_R] = Vector3Add(center, (Vector3){0, 0, HALF_SIZE});
+    block->side_pos[CLR_B] = Vector3Add(center, (Vector3){-HALF_SIZE, 0, 0});
+    block->side_pos[CLR_O] = Vector3Add(center, (Vector3){0, 0, -HALF_SIZE});
+    block->side_pos[CLR_G] = Vector3Add(center, (Vector3){HALF_SIZE, 0, 0});
+    block->side_pos[CLR_Y] = Vector3Add(center, (Vector3){0, HALF_SIZE, 0});
+    block->side_pos[CLR_W] = Vector3Add(center, (Vector3){0, -HALF_SIZE, 0});
 
     for (int k = 0; k < CLR_$; k ++)
     {
-        cube->side_colors[k] = CLR_fromc(clr_str[k]);
-        cube->side_models[k] = LoadModelFromMesh(mesh);
+        block->side_colors[k] = CLR_fromc(clr_str[k]);
+        block->side_models[k] = LoadModelFromMesh(mesh);
     }
 
-    cube->side_models[CLR_R].transform = MatrixMultiply(MatrixRotateY(PI / 4), MatrixRotateX(PI / 2));
-    cube->side_models[CLR_B].transform = MatrixMultiply(MatrixRotateY(PI / 4), MatrixRotateZ(PI / 2));
-    cube->side_models[CLR_O].transform = MatrixMultiply(MatrixRotateY(PI / 4), MatrixRotateX(-PI / 2));
-    cube->side_models[CLR_G].transform = MatrixMultiply(MatrixRotateY(PI / 4), MatrixRotateZ(-PI / 2));
-    cube->side_models[CLR_Y].transform = MatrixRotateY(PI / 4);
-    cube->side_models[CLR_W].transform = MatrixMultiply(MatrixRotateY(PI / 4), MatrixRotateX(PI));
+    f = MatrixRotateY(PI / 4);
+    block->side_models[CLR_R].transform = MatrixMultiply(f, MatrixRotateX(PI / 2));
+    block->side_models[CLR_B].transform = MatrixMultiply(f, MatrixRotateZ(PI / 2));
+    block->side_models[CLR_O].transform = MatrixMultiply(f, MatrixRotateX(-PI / 2));
+    block->side_models[CLR_G].transform = MatrixMultiply(f, MatrixRotateZ(-PI / 2));
+    block->side_models[CLR_Y].transform = f;
+    block->side_models[CLR_W].transform = MatrixMultiply(f, MatrixRotateX(PI));
 }
 
-void Cube_init_grid(Cube * cube, int x, int y, int z, const char * clr_str)
+void Block_init_grid(Block * block, int x, int y, int z, const char * clr_str)
 {
     Vector3 pos;
 
     pos = (Vector3){x * HALF_SIZE * 2, y * HALF_SIZE * 2, z * HALF_SIZE * 2};
 
-    Cube_init(cube, pos, clr_str);
+    Block_init(block, pos, clr_str);
 }
 
-void Cube_rot(Cube * cube, Vector3 axis, float x)
+void Block_rot(Block * block, Vector3 axis, float x)
 {
     Matrix f;
 
     x = x * DEG2RAD;
     f = MatrixRotate(axis, x);
-    cube->center = Vector3Transform(cube->center, f);
+    block->center = Vector3Transform(block->center, f);
 
     for (int k = 0; k < CLR_$; k ++)
     {
-        cube->side_models[k].transform = MatrixMultiply(cube->side_models[k].transform, f);
-        cube->side_pos[k] = Vector3Transform(cube->side_pos[k], f);
+        block->side_models[k].transform = MatrixMultiply(block->side_models[k].transform, f);
+        block->side_pos[k] = Vector3Transform(block->side_pos[k], f);
     }
 }
 
-void Cube_draw(const Cube * cube)
+void Block_draw(const Block * block)
 {
     for (int k = 0; k < CLR_$; k ++)
     {
-        DrawModel(cube->side_models[k], cube->side_pos[k], 1, _colors[cube->side_colors[k]]);
-        // DrawModelWires(cube->side_models[k], cube->side_pos[k], 1, BLACK);
+        DrawModel(block->side_models[k], block->side_pos[k], 1, _colors[block->side_colors[k]]);
+        // DrawModelWires(block->side_models[k], block->side_pos[k], 1, BLACK);
     }
 }
 
-void draw_Cubes(const Cube * cube, int n)
+void draw_Blocks(const Block * blocks, int n)
 {
-    mem_map(cube, n, sizeof(Cube), Cube_draw);
+    $mem_map(blocks, Block, n, Block_draw);
 }
 
+#define CUBE_SIZE 3
+typedef struct
+{
+    Block blocks[CUBE_SIZE * CUBE_SIZE * CUBE_SIZE];
+}   Cube;
 
+void Cube_init(Cube * cube, const char * repr)
+{
+    
+}
 
 int main()
 {
@@ -147,12 +157,12 @@ int main()
 
     cam = _cam_get();
 
-    // Cube cube;
-    Cube cubes[2];
+    // Block block;
+    Block blocks[2];
 
-    // Cube_init(& cubes[0], (Vector3){}, "rbog_w");
-    Cube_init_grid(& cubes[0], 0, 0, 1, "r_____");
-    Cube_init_grid(& cubes[1], 1, 1, 0, "rb_g__");
+    // Block_init(& blocks[0], (Vector3){}, "rbog_w");
+    Block_init_grid(& blocks[0], 0, 0, 1, "r_____");
+    Block_init_grid(& blocks[1], 1, 1, 0, "rb_g__");
 
     while (! WindowShouldClose())
     {
@@ -174,7 +184,9 @@ int main()
         }
         if (IsKeyDown(KEY_SPACE))
         {
-            Cube_rot(& cubes[0], (Vector3){1, 0, 0}, 2);
+            Block_rot(& blocks[0], (Vector3){1, 0, 0}, 2);
+            Block_rot(& blocks[1], (Vector3){1, 0, 0}, 2);
+
         }
 
 
@@ -185,8 +197,8 @@ int main()
         BeginMode3D(cam);
         DrawGrid(100, 1);
 
-        // Cube_draw(& cube);
-        draw_Cubes(cubes, 2);
+        // Block_draw(& block);
+        draw_Blocks(blocks, 2);
 
         EndMode3D();
 
