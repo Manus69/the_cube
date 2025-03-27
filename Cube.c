@@ -149,10 +149,11 @@ static void _Animation_reset(Animation * anm)
     anm->w = 0;
 }
 
-static void _Animation_inc(Animation * anm, float dx)
+static bool _Animation_inc(Animation * anm, float dx)
 {
     anm->phi += dx;
-    if (_Animation_done(anm)) _Animation_reset(anm);
+
+    return ! _Animation_done(anm);
 }
 
 static Vector3 _CLR_axis_map(CLR clr)
@@ -170,7 +171,7 @@ static Vector3 _CLR_axis_map(CLR clr)
     return axes[clr];
 }
 
-static void _rot(Cube * cube, CLR clr_side, float w)
+static bool _rot(Cube * cube, CLR clr_side, float w)
 {
     byte *  side;
     int     idx;
@@ -187,14 +188,18 @@ static void _rot(Cube * cube, CLR clr_side, float w)
         Block_rot(cube->blocks + idx, axis, w * dt);
     }
 
-    _Animation_inc(& cube->anm, w * dt);
+    return ! _Animation_inc(& cube->anm, w * dt);
 }
 
 void Cube_update(Cube * cube)
 {
     if (! _Animation_active(& cube->anm)) return ;
 
-    _rot(cube, cube->anm.side_clr, cube->anm.w);
+    if (_rot(cube, cube->anm.side_clr, cube->anm.w))
+    {
+        Repr_rot(& cube->idx_repr, cube->anm.side_clr, 1);
+        _Animation_reset(& cube->anm);
+    }
 }
 
 void Cube_rot(Cube * cube, CLR clr_side, float w)
@@ -203,9 +208,6 @@ void Cube_rot(Cube * cube, CLR clr_side, float w)
 
     _Animation_set(& cube->anm, clr_side, w);
 }
-
-//
-#include <stdio.h>
 
 static int _repr_idx_map(CLR side, int row, int col)
 {
