@@ -2,6 +2,9 @@
 #include "../_slib/_slib.h"
 #include "Cube.h"
 
+#define CAM_ROT_W   2
+#define CUBE_ROT_W  180
+
 static Camera _cam_get(void)
 {
     Camera cam = {};
@@ -25,7 +28,6 @@ void Cam_rotv(Camera3D * cam, float x)
     cam->position = Vector3Transform(cam->position, MatrixRotate((Vector3){1, 0, -1}, x * DEG2RAD));
 }
 
-
 int main()
 {
     Camera cam;
@@ -37,27 +39,18 @@ int main()
 
     while (! WindowShouldClose())
     {
-        if (IsKeyDown(KEY_LEFT))
-        {
-            Cam_roty(& cam, 2);
-        }
-        if (IsKeyDown(KEY_RIGHT))
-        {
-            Cam_roty(& cam, -2);
-        }
-        if (IsKeyDown(KEY_UP))
-        {
-            Cam_rotv(& cam, 2);
-        }
-        if (IsKeyDown(KEY_DOWN))
-        {
-            Cam_rotv(& cam, -2);
-        }
-        if (IsKeyDown(KEY_SPACE))
-        {
-            Cube_rot(cube, CLR_R, 2);
-        }
+        if (IsKeyDown(KEY_LEFT))    Cam_roty(& cam, CAM_ROT_W);
+        if (IsKeyDown(KEY_RIGHT))   Cam_roty(& cam, -CAM_ROT_W);
+        if (IsKeyDown(KEY_UP))      Cam_rotv(& cam, CAM_ROT_W);
+        if (IsKeyDown(KEY_DOWN))    Cam_rotv(& cam, -CAM_ROT_W);
 
+        if (IsKeyDown(KEY_R) && IsKeyDown(KEY_LEFT_SHIFT)) Cube_rot(cube, CLR_R, -CUBE_ROT_W);
+        else if (IsKeyDown(KEY_R)) Cube_rot(cube, CLR_R, CUBE_ROT_W);
+        
+        if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_Y)) Cube_rot(cube, CLR_Y, -CUBE_ROT_W);
+        else if (IsKeyDown(KEY_Y)) Cube_rot(cube, CLR_Y, CUBE_ROT_W);
+
+        Cube_update(cube);
 
         BeginDrawing();
         ClearBackground(LIGHTGRAY);
@@ -74,5 +67,7 @@ int main()
     }
 
     CloseWindow();
+    Cube_del(cube);
+
     return 0;
 }

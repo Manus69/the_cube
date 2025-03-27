@@ -15,10 +15,19 @@ typedef struct
     CLR     side_colors[CLR_$];
 }   Block;
 
+typedef struct
+{
+    CLR     side_clr;
+    float   w;
+    float   phi;
+}   Animation;
+
+
 struct Cube
 {
-    Block   blocks[CUBE_DIM * CUBE_DIM * CUBE_DIM];
-    Repr    idx_repr;
+    Block       blocks[CUBE_DIM * CUBE_DIM * CUBE_DIM];
+    Repr        idx_repr;
+    Animation   anm;
 };
 
 static const Color _colors[] =
@@ -117,16 +126,85 @@ void Cube_draw(Cube const * cube)
     draw_Blocks(cube->blocks, 27);
 }
 
-void Cube_rot(Cube * cube, CLR side, float x)
+static bool _Animation_active(Animation const * anm)
 {
-    (void) side;
-
-    for (int k = 0; k < 9; k ++)
-    {
-        Block_rot(cube->blocks + k, (Vector3){1, 0, 0}, x);
-    }
+    return anm->w > 0.0f || anm->w < 0.0f;
 }
 
+static bool _Animation_done(Animation const * anm)
+{
+    return fabs(anm->phi) >= 90.0f; 
+}
+
+static void _Animation_set(Animation * anm, CLR clr, float w)
+{
+    anm->side_clr = clr;
+    anm->w = w;
+    anm->phi = 0;
+}
+
+static void _Animation_reset(Animation * anm)
+{
+    anm->phi = 0;
+    anm->w = 0;
+}
+
+static void _Animation_inc(Animation * anm, float dx)
+{
+    anm->phi += dx;
+    if (_Animation_done(anm)) _Animation_reset(anm);
+}
+
+static Vector3 _CLR_axis_map(CLR clr)
+{
+    static const Vector3 axes[] =
+    {
+        [CLR_R] = (Vector3){0, 0, 1},
+        [CLR_G] = (Vector3){1, 0, 0},
+        [CLR_O] = (Vector3){0, 0, -1},
+        [CLR_B] = (Vector3){-1, 0, 0},
+        [CLR_Y] = (Vector3){0, 1, 0},
+        [CLR_W] = (Vector3){0, -1, 0},
+    };
+
+    return axes[clr];
+}
+
+static void _rot(Cube * cube, CLR clr_side, float w)
+{
+    byte *  side;
+    int     idx;
+    Vector3 axis;
+    double  dt;
+
+    side = Repr_side(& cube->idx_repr, clr_side);
+    axis = _CLR_axis_map(clr_side);
+    dt = GetFrameTime();
+
+    for (int k = 0; k < cube->idx_repr.side_len; k ++)
+    {
+        idx = side[k];
+        Block_rot(cube->blocks + idx, axis, w * dt);
+    }
+
+    _Animation_inc(& cube->anm, w * dt);
+}
+
+void Cube_update(Cube * cube)
+{
+    if (! _Animation_active(& cube->anm)) return ;
+
+    _rot(cube, cube->anm.side_clr, cube->anm.w);
+}
+
+void Cube_rot(Cube * cube, CLR clr_side, float w)
+{
+    if (_Animation_active(& cube->anm)) return ;
+
+    _Animation_set(& cube->anm, clr_side, w);
+}
+
+//
 #include <stdio.h>
 
 static int _repr_idx_map(CLR side, int row, int col)
@@ -186,6 +264,24 @@ static void _init_colors(Cube * cube, byte const * clr_repr)
     }
 }
 
+static void _init_side_repr(Cube * cube)
+{
+    byte *  side;
+    int     idx;
+
+    cube->idx_repr.side_len = CUBE_DIM * CUBE_DIM;
+
+    for (CLR clr = CLR_R; clr < CLR_$; clr ++)
+    {
+        side = Repr_side(& cube->idx_repr, clr);
+        for (int k = 0; k < cube->idx_repr.side_len; k ++)
+        {
+            idx = _repr_idx_map(clr, _idx_row(k, CUBE_DIM), _idx_col(k, CUBE_DIM));
+            side[k] = (byte) idx;
+        }
+    }
+}
+
 Cube * Cube_new(int size)
 {
     (void) size;
@@ -195,6 +291,12 @@ Cube * Cube_new(int size)
     if (! (cube = calloc(1, sizeof(Cube)))) return NULL;
     _init_blocks(cube);
     _init_colors(cube, (byte *) CUBE_CLR_STR);
+    _init_side_repr(cube);
 
     return cube;
+}
+
+void Cube_del(Cube * cube)
+{
+    free(cube);
 }
