@@ -3,8 +3,7 @@
 
 typedef struct
 {
-    byte    buff[1 << 8];
-    int     side_len;
+    byte    buff[1 << 6];
 }   Repr;
 
 byte *  Repr_side(Repr * repr, CLR clr);

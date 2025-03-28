@@ -5,19 +5,21 @@
 #include <raymath.h>
 #include "../_slib/_slib.h"
 
-static inline int _row_col_idx(int row, int col, int dim)
+#define DIM 3
+
+static inline int _row_col_idx(int row, int col)
 {
-    return row * dim + col;
+    return row * DIM + col;
 }
 
-static inline int _idx_row(int idx, int dim)
+static inline int _idx_row(int idx)
 {
-    return idx / dim;
+    return idx / DIM;
 }
 
-static inline int _idx_col(int idx, int dim)
+static inline int _idx_col(int idx)
 {
-    return idx % dim;
+    return idx % DIM;
 }
 
 typedef enum

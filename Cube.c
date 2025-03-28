@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #define DELTA           0.05
-#define CUBE_DIM        3
 #define HALF_SIZE       1
 #define CUBE_CLR_STR    "rrrrrrrrr" "ggggggggg" "ooooooooo" "bbbbbbbbb" "yyyyyyyyy" "wwwwwwwww"
 
@@ -25,7 +24,7 @@ typedef struct
 
 struct Cube
 {
-    Block       blocks[CUBE_DIM * CUBE_DIM * CUBE_DIM];
+    Block       blocks[DIM * DIM * DIM];
     Repr        idx_repr;
     Animation   anm;
 };
@@ -123,7 +122,7 @@ void draw_Blocks(const Block * blocks, int n)
 
 void Cube_draw(Cube const * cube)
 {
-    draw_Blocks(cube->blocks, 27);
+    draw_Blocks(cube->blocks, DIM * DIM * DIM);
 }
 
 static bool _Animation_active(Animation const * anm)
@@ -182,7 +181,7 @@ static bool _rot(Cube * cube, CLR clr_side, float w)
     axis = _CLR_axis_map(clr_side);
     dt = GetFrameTime();
 
-    for (int k = 0; k < cube->idx_repr.side_len; k ++)
+    for (int k = 0; k < DIM * DIM; k ++)
     {
         idx = side[k];
         Block_rot(cube->blocks + idx, axis, w * dt);
@@ -199,8 +198,7 @@ void Cube_update(Cube * cube)
     {
         if (cube->anm.side_clr == CLR_R)
         {
-            Repr_rot(& cube->idx_repr, cube->anm.side_clr, 1);
-
+            Repr_rot(& cube->idx_repr, cube->anm.side_clr, cube->anm.w > 0 ? 1 : -1);
         }
         _Animation_reset(& cube->anm);
     }
@@ -215,7 +213,7 @@ void Cube_rot(Cube * cube, CLR clr_side, float w)
 
 static int _repr_idx_map(CLR side, int row, int col)
 {
-    static const int vals[CLR_$][CUBE_DIM * CUBE_DIM] =
+    static const int vals[CLR_$][DIM * DIM] =
     {
         {8, 17, 26, 5, 14, 23, 2, 11, 20},
         {26, 25, 24, 23, 22, 21, 20, 19, 18},
@@ -225,7 +223,7 @@ static int _repr_idx_map(CLR side, int row, int col)
         {2, 11, 20, 1, 10, 19, 0, 9, 18},
     };
 
-    return vals[side][_row_col_idx(row, col, CUBE_DIM)];
+    return vals[side][_row_col_idx(row, col)];
 }
 
 static void _init_blocks(Cube * cube)
@@ -233,16 +231,16 @@ static void _init_blocks(Cube * cube)
     int idx;
 
     idx = 0;
-    for (int x = 0; x < CUBE_DIM; x ++)
+    for (int x = 0; x < DIM; x ++)
     {
-        for (int y = 0; y < CUBE_DIM; y ++)
+        for (int y = 0; y < DIM; y ++)
         {
-            for (int z = 0; z < CUBE_DIM; z ++)
+            for (int z = 0; z < DIM; z ++)
             {
                 // if (y == 0)
                 //     printf("id : %d at (%d %d %d)\n", idx, x, y, z);
 
-                Block_init_grid(& cube->blocks[idx], x - CUBE_DIM / 2, y - CUBE_DIM / 2, z - CUBE_DIM / 2);
+                Block_init_grid(& cube->blocks[idx], x - DIM / 2, y - DIM / 2, z - DIM / 2);
                 idx ++;
             }
         }
@@ -256,10 +254,10 @@ static void _init_colors(Cube * cube, byte const * clr_repr)
     r_idx = 0;
     for (CLR clr = CLR_R; clr < CLR_$; clr ++)
     {
-        for (int k = 0; k < CUBE_DIM * CUBE_DIM; k ++)
+        for (int k = 0; k < DIM * DIM; k ++)
         {
-            row = _idx_row(k, CUBE_DIM);
-            col = _idx_col(k, CUBE_DIM);
+            row = _idx_row(k);
+            col = _idx_col(k);
             idx = _repr_idx_map(clr, row, col);
 
             // printf("idx : %d clr : %d repr : %u\n", idx, clr, clr_repr[r_idx]);
@@ -275,14 +273,12 @@ static void _init_side_repr(Cube * cube)
     byte *  side;
     int     idx;
 
-    cube->idx_repr.side_len = CUBE_DIM * CUBE_DIM;
-
     for (CLR clr = CLR_R; clr < CLR_$; clr ++)
     {
         side = Repr_side(& cube->idx_repr, clr);
-        for (int k = 0; k < cube->idx_repr.side_len; k ++)
+        for (int k = 0; k < DIM * DIM; k ++)
         {
-            idx = _repr_idx_map(clr, _idx_row(k, CUBE_DIM), _idx_col(k, CUBE_DIM));
+            idx = _repr_idx_map(clr, _idx_row(k), _idx_col(k));
             side[k] = (byte) idx;
         }
     }
