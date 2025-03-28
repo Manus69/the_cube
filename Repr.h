@@ -8,6 +8,7 @@ typedef struct
 
 byte *  Repr_side(Repr * repr, CLR clr);
 void    Repr_rot(Repr * repr, CLR clr, int dir);
+void    Repr_dbg(Repr const * repr, CLR clr);
 
 
 

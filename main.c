@@ -37,6 +37,8 @@ int main()
     cam = _cam_get();
     Cube * cube = Cube_new(3);
 
+    
+
     while (! WindowShouldClose())
     {
         if (IsKeyDown(KEY_LEFT))    Cam_roty(& cam, CAM_ROT_W);
@@ -49,6 +51,18 @@ int main()
         
         if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_Y)) Cube_rot(cube, CLR_Y, -CUBE_ROT_W);
         else if (IsKeyDown(KEY_Y)) Cube_rot(cube, CLR_Y, CUBE_ROT_W);
+
+        if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_G)) Cube_rot(cube, CLR_G, -CUBE_ROT_W);
+        else if (IsKeyDown(KEY_G)) Cube_rot(cube, CLR_G, CUBE_ROT_W);
+
+        if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_B)) Cube_rot(cube, CLR_B, -CUBE_ROT_W);
+        else if (IsKeyDown(KEY_B)) Cube_rot(cube, CLR_B, CUBE_ROT_W);
+
+        if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_O)) Cube_rot(cube, CLR_O, -CUBE_ROT_W);
+        else if (IsKeyDown(KEY_O)) Cube_rot(cube, CLR_O, CUBE_ROT_W);
+
+        if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_W)) Cube_rot(cube, CLR_W, -CUBE_ROT_W);
+        else if (IsKeyDown(KEY_W)) Cube_rot(cube, CLR_W, CUBE_ROT_W);
 
         Cube_update(cube);
 

@@ -196,10 +196,10 @@ void Cube_update(Cube * cube)
 
     if (_rot(cube, cube->anm.side_clr, cube->anm.w))
     {
-        if (cube->anm.side_clr == CLR_R)
-        {
-            Repr_rot(& cube->idx_repr, cube->anm.side_clr, cube->anm.w > 0 ? 1 : -1);
-        }
+        Repr_rot(& cube->idx_repr, cube->anm.side_clr, cube->anm.w > 0 ? 1 : -1);
+        //
+        // Repr_dbg(& cube->idx_repr, CLR_R);
+        
         _Animation_reset(& cube->anm);
     }
 }
