@@ -93,7 +93,7 @@ void Repr_rot(Repr * repr, CLR clr, int dir)
     byte *  side;
     byte    buff[1 << 6] = {};
 
-    side = Repr_side(repr, _move_side_seq[clr][0]);
+    side = Repr_side(repr, _move_side_seq[CLR_R][0]);
     _side_cpy_row(buff, side, 2, 3);
 
     _side_set_rfc(side, 2, Repr_side(repr, CLR_G), 0, 3);
