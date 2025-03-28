@@ -1,6 +1,7 @@
 #define _SLIB_IMPL
 #include "../_slib/_slib.h"
 #include "Cube.h"
+#include "Prog.h"
 
 #define CAM_ROT_W   2
 #define CUBE_ROT_W  180

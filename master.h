@@ -33,6 +33,26 @@ typedef enum
     CLR_$,
 }   CLR;
 
+static inline CLR CLR_fromc(char x)
+{
+    static const CLR _tbl[] =
+    {
+        ['r'] = CLR_R,
+        ['g'] = CLR_G,
+        ['o'] = CLR_O,
+        ['b'] = CLR_B,
+        ['y'] = CLR_Y,
+        ['w'] = CLR_W,
+        ['_'] = CLR_$,
+    };
 
+    return _tbl[(int) x];
+}
+
+typedef struct
+{
+    char clr;
+    char dir;
+}   Cmd;
 
 #endif

@@ -6,29 +6,6 @@
 #define HALF_SIZE       1
 #define CUBE_CLR_STR    "rrrrrrrrr" "ggggggggg" "ooooooooo" "bbbbbbbbb" "yyyyyyyyy" "wwwwwwwww"
 
-typedef struct
-{
-    Vector3 center;
-    Model   side_models[CLR_$];
-    Vector3 side_pos[CLR_$];
-    CLR     side_colors[CLR_$];
-}   Block;
-
-typedef struct
-{
-    CLR     side_clr;
-    float   w;
-    float   phi;
-}   Animation;
-
-
-struct Cube
-{
-    Block       blocks[DIM * DIM * DIM];
-    Repr        idx_repr;
-    Animation   anm;
-};
-
 static const Color _colors[] =
 {
     RED, GREEN, ORANGE, BLUE, YELLOW, WHITE, DARKGRAY,
@@ -289,6 +266,13 @@ static void _init_side_repr(Cube * cube)
     }
 }
 
+void Cube_init(Cube * cube)
+{
+    _init_blocks(cube);
+    _init_colors(cube, (byte *) CUBE_CLR_STR);
+    _init_side_repr(cube);
+}
+
 Cube * Cube_new(int size)
 {
     (void) size;
@@ -296,9 +280,7 @@ Cube * Cube_new(int size)
     Cube * cube;
 
     if (! (cube = calloc(1, sizeof(Cube)))) return NULL;
-    _init_blocks(cube);
-    _init_colors(cube, (byte *) CUBE_CLR_STR);
-    _init_side_repr(cube);
+    Cube_init(cube);
 
     return cube;
 }
