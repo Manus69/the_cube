@@ -190,6 +190,11 @@ static bool _rot(Cube * cube, CLR clr_side, float w)
     return ! _Animation_inc(& cube->anm, w * dt);
 }
 
+bool Cube_in_animation(Cube const * cube)
+{
+    return _Animation_active(& cube->anm);
+}
+
 void Cube_update(Cube * cube)
 {
     if (! _Animation_active(& cube->anm)) return ;

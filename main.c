@@ -28,6 +28,40 @@ void Cam_rotv(Camera3D * cam, float x)
     cam->position = Vector3Transform(cam->position, MatrixRotate((Vector3){1, 0, -1}, x * DEG2RAD));
 }
 
+typedef struct
+{
+    CLR     clr;
+    float   w;
+}   Action;
+
+static void _try_action(Cube * cube)
+{
+    static Action actions[] =
+    {
+        {CLR_R, CUBE_ROT_W},
+        {CLR_R, CUBE_ROT_W},
+        {CLR_O, CUBE_ROT_W},
+        {CLR_O, CUBE_ROT_W},
+        {CLR_Y, CUBE_ROT_W},
+        {CLR_Y, CUBE_ROT_W},
+        {CLR_W, CUBE_ROT_W},
+        {CLR_W, CUBE_ROT_W},
+        {CLR_G, CUBE_ROT_W},
+        {CLR_G, CUBE_ROT_W},
+        {CLR_B, CUBE_ROT_W},
+        {CLR_B, CUBE_ROT_W},
+    };
+
+    static int k;
+
+    if (Cube_in_animation(cube))    return ;
+    if (k == sizeof(actions) / sizeof(Action)) return ;
+
+    Cube_rot(cube, actions[k].clr, actions[k].w);
+    k ++;
+}
+
+//deq is broken
 int main()
 {
     Camera cam;
@@ -36,8 +70,6 @@ int main()
 
     cam = _cam_get();
     Cube * cube = Cube_new(3);
-
-    
 
     while (! WindowShouldClose())
     {
@@ -63,6 +95,11 @@ int main()
 
         if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_W)) Cube_rot(cube, CLR_W, -CUBE_ROT_W);
         else if (IsKeyDown(KEY_W)) Cube_rot(cube, CLR_W, CUBE_ROT_W);
+
+        if (IsKeyDown (KEY_SPACE))
+        {
+            _try_action(cube);
+        }
 
         Cube_update(cube);
 

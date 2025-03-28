@@ -10,5 +10,6 @@ void    Cube_del(Cube * cube);
 void    Cube_draw(Cube const * cube);
 void    Cube_rot(Cube * cube, CLR side, float w);
 void    Cube_update(Cube * cube);
+bool    Cube_in_animation(Cube const * cube);
 
 #endif

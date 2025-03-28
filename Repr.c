@@ -163,48 +163,6 @@ void Repr_rot(Repr * repr, CLR clr, int dir)
     _cycle(repr, _clr_rot_data[clr][1], _idx_rot_data[clr][2], dir);
 }
 
-// void _rot_r(Repr * repr, CLR clr, int dir)
-// {
-//     _cycle(repr, _clr_rot_data[clr][0], _face_rot_data[0], dir);
-//     _cycle(repr, _clr_rot_data[clr][0], _face_rot_data[1], dir);
-
-//     _cycle(repr, _clr_rot_data[clr][1], _idx_rot_data[clr][0], dir);
-//     _cycle(repr, _clr_rot_data[clr][1], _idx_rot_data[clr][1], dir);
-//     _cycle(repr, _clr_rot_data[clr][1], _idx_rot_data[clr][2], dir);
-// }
-
-// void _rot_y(Repr * repr, CLR clr, int dir)
-// {
-//     _cycle(repr, (CLR []){CLR_Y, CLR_Y, CLR_Y, CLR_Y}, (int []){0, 6, 8, 2}, dir);
-//     _cycle(repr, (CLR []){CLR_Y, CLR_Y, CLR_Y, CLR_Y}, (int []){1, 3, 7, 5}, dir);
-
-//     _cycle(repr, (CLR []){CLR_R, CLR_G, CLR_O, CLR_B}, (int []){0, 0, 0, 0}, dir);
-//     _cycle(repr, (CLR []){CLR_R, CLR_G, CLR_O, CLR_B}, (int []){1, 1, 1, 1}, dir);
-//     _cycle(repr, (CLR []){CLR_R, CLR_G, CLR_O, CLR_B}, (int []){2, 2, 2, 2}, dir);
-// }
-
-
-
-// static const int _corner_seql[] = {0, 2, 8, 6};
-// static const int _corner_seqr[] = {0, 6, 8, 2};
-// static const int _edge_seql[] = {1, 5, 7, 3};
-// static const int _edge_seqr[] = {1, 3, 7, 5};
-
-// void _side_rot(byte * side, int const * seq)
-// {
-//     byte buff;
-
-//     buff = side[seq[0]];
-//     for (int k = 0; k < 3; k ++)
-//     {
-//         side[seq[k]] = side[seq[k + 1]];
-//     }
-
-//     side[seq[3]] = buff;
-// }
-
-
-
 #include <stdio.h>
 
 void Repr_dbg(Repr const * repr, CLR clr)
