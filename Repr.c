@@ -2,61 +2,9 @@
 
 #define CYC_LEN 4
 
-byte * _side_get(byte * side, int idx)
+static byte * _side_get(byte * side, int idx)
 {
     return side + idx;
-}
-
-byte * _side_get_rc(byte * side, int row, int col)
-{
-    return _side_get(side, _row_col_idx(row, col));
-}
-
-void _side_row_to_buff(byte * restrict buff, byte * restrict side, int row)
-{
-    side = _side_get_rc(side, row, 0);
-    for (int k = 0; k < DIM; k ++) buff[k] = side[k];
-}
-
-void _side_set_row(byte * restrict side, int row, byte * restrict buff)
-{
-    side = _side_get_rc(side, row, 0);
-    for (int k = 0; k < DIM; k ++) side[k] = buff[k];
-}
-
-void _side_col_to_buff(byte * restrict buff, byte * restrict side, int col)
-{
-    for (int k = 0; k < DIM; k ++) buff[k] = * _side_get_rc(side, k, col);
-}
-
-void _side_set_col(byte * restrict side, int col, byte * restrict buff)
-{
-    for (int k = 0; k < DIM; k ++) * (byte *) _side_get_rc(side, k, col) = buff[k];
-}
-
-void _side_set_val(byte * side, byte val)
-{
-    for (int k = 0; k < DIM * DIM; k ++) * _side_get(side, k) = val;
-}
-
-void _side_set_rfc(byte * dst, int row, byte * src, int col)
-{
-    dst = _side_get_rc(dst, row, 0);
-    for (int k = 0; k < DIM; k ++) dst[k] = * _side_get_rc(src, k, col);
-}
-
-void _side_set_rfr(byte * dst, int drow, byte * src, int srow)
-{
-    dst = _side_get_rc(dst, drow, 0);
-    src = _side_get_rc(src, srow, 0);
-
-    for (int k = 0; k < DIM; k ++) dst[k] = src[k];
-}
-
-void _side_set_cfr(byte * dst, int col, byte * src, int row)
-{
-    src = _side_get_rc(src, row, 0);
-    for (int k = 0; k < DIM; k ++) * _side_get_rc(dst, k, col) = src[k]; 
 }
 
 byte * Repr_side(Repr * repr, CLR clr)
@@ -69,7 +17,7 @@ byte * Repr_get(Repr * repr, CLR clr, int idx)
     return _side_get(Repr_side(repr, clr), idx);
 }
 
-void _cycle_rev(Repr * repr, CLR const * sides, int const * idxs)
+static void _cycle_rev(Repr * repr, CLR const * sides, int const * idxs)
 {
     byte    buff;
     int     k;
@@ -83,7 +31,7 @@ void _cycle_rev(Repr * repr, CLR const * sides, int const * idxs)
     * Repr_get(repr, sides[k], idxs[k]) = buff;
 }
 
-void _cycle(Repr * repr, CLR const * sides, int const * idxs, int dir)
+static void _cycle(Repr * repr, CLR const * sides, int const * idxs, int dir)
 {
     byte    buff;
     int     k;
