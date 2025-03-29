@@ -9,12 +9,13 @@
 
 typedef enum
 {
-    CNTRL_SHIFT = CLR_$,
+    CNTRL_SPACE = CLR_$,
+    CNTR_TAB,
+    CNTRL_SHIFT,
     CNTRL_LEFT,
     CNTRL_RIGHT,
     CNTRL_UP,
     CNTRL_DOWN,
-    CNTRL_SPACE,
     CNTRL_$,
 }   CNTRL;
 
@@ -63,7 +64,7 @@ Prog * Prog_new(void)
 
     prog->runs = true;
 
-    printf("%zu\n", sizeof(Prog));
+    // printf("%zu\n", sizeof(Prog));
     return prog;
 }
 
@@ -89,6 +90,16 @@ static void _Cam_roty(Camera3D * cam, float x)
 //     cam->position = Vector3Transform(cam->position, MatrixRotate((Vector3){1, 0, -1}, x * DEG2RAD));
 // }
 
+static void _test(Prog * prog)
+{
+    Cmd seq[] = {{0, 1}, {2, -1}, {1, 1}, {3, -1}};
+
+    for (int k = 0; (unsigned) k < sizeof(seq) / sizeof(* seq); k ++)
+    {
+        Deq_pushr_check(& prog->cmd_queue, seq + k);
+    }
+}
+
 #define CAM_W   3
 #define CUBE_W  360
 
@@ -104,7 +115,14 @@ void Prog_input(Prog * prog)
         [CLR_W] = KEY_W,    [CNTRL_SPACE] = KEY_SPACE,
     };
 
-    for (int k = 0; k < CNTRL_$; k ++)
+    Cmd cmd = {};
+
+    for (int k = 0; k <= CNTR_TAB; k ++)
+    {
+        prog->input.inputs[k] = IsKeyPressed(_key_map[k]);
+    }
+
+    for (int k = CNTR_TAB; k < CNTRL_$; k ++)
     {
         prog->input.inputs[k] = IsKeyDown(_key_map[k]);
     }
@@ -112,16 +130,32 @@ void Prog_input(Prog * prog)
     if (WindowShouldClose())                { prog->runs = false; return; }
     if (prog->input.inputs[CNTRL_LEFT])     _Cam_roty(& prog->cam, CAM_W);
     if (prog->input.inputs[CNTRL_RIGHT])    _Cam_roty(& prog->cam, -CAM_W);
-
+    
+    if (Deq_len(& prog->cmd_queue) > 1)     { return ; }
     for (int k = CLR_R; k < CLR_$; k ++)
     {
-        if      (prog->input.inputs[CNTRL_SHIFT] && prog->input.inputs[k]) Cube_rot(& prog->cube, k, -CUBE_W);
-        else if (prog->input.inputs[k]) Cube_rot(& prog->cube, k, CUBE_W);
+        if      (prog->input.inputs[CNTRL_SHIFT] && prog->input.inputs[k]) cmd = (Cmd) {k, -1};
+        else if (prog->input.inputs[k]) cmd = (Cmd) {k, 1};
     }
+    
+    if (cmd.dir) { Deq_pushr_check(& prog->cmd_queue, & cmd); return; }
+    if (prog->input.inputs[CNTRL_SPACE])    _test(prog);
 }
 
 void Prog_update(Prog * prog)
 {
+    Cmd cmd;
+
+    if (! Deq_empty(& prog->cmd_queue) && ! Cube_in_animation(& prog->cube))
+    {
+        cmd = $drf(Cmd) Deq_popl(& prog->cmd_queue);
+        Cube_rot(& prog->cube, cmd.clr, cmd.dir * CUBE_W);    
+    }
+    else if (prog->input.inputs[CNTR_TAB] && ! Cube_in_animation(& prog->cube))
+    {
+        Cube_reset_clr(& prog->cube);
+    }
+
     Cube_update(& prog->cube);
 }
 

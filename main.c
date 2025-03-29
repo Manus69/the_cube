@@ -3,6 +3,7 @@
 #include "Prog.h"
 
 // blocks get misaligned at higher fps
+// redo animation (int n steps, fixed dx)
 
 int main()
 {

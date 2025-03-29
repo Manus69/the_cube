@@ -212,21 +212,32 @@ static void _init_blocks(Cube * cube)
 
 static void _init_colors(Cube * cube, byte const * clr_repr)
 {
-    int idx, row, col, r_idx;
+    // int idx, row, col, r_idx;
 
-    r_idx = 0;
+    // r_idx = 0;
+    // for (CLR clr = CLR_R; clr < CLR_$; clr ++)
+    // {
+    //     for (int k = 0; k < DIM * DIM; k ++)
+    //     {
+    //         row = _idx_row(k);
+    //         col = _idx_col(k);
+    //         idx = _repr_idx_map(clr, row, col);
+
+    //         // printf("idx : %d clr : %d repr : %u\n", idx, clr, clr_repr[r_idx]);
+
+    //         cube->blocks[idx].side_colors[clr] = CLR_fromc(clr_repr[r_idx]);
+    //         r_idx ++;
+    //     }
+    // }
+
+    int     idx;
+
     for (CLR clr = CLR_R; clr < CLR_$; clr ++)
     {
         for (int k = 0; k < DIM * DIM; k ++)
         {
-            row = _idx_row(k);
-            col = _idx_col(k);
-            idx = _repr_idx_map(clr, row, col);
-
-            // printf("idx : %d clr : %d repr : %u\n", idx, clr, clr_repr[r_idx]);
-
-            cube->blocks[idx].side_colors[clr] = CLR_fromc(clr_repr[r_idx]);
-            r_idx ++;
+            idx = * Repr_get(& cube->idx_repr, clr, k);
+            cube->blocks[idx].side_colors[clr] = CLR_fromc($drf(char) clr_repr + clr * 9 + k);
         }
     }
 }
@@ -247,11 +258,16 @@ static void _init_side_repr(Cube * cube)
     }
 }
 
+void Cube_reset_clr(Cube * cube)
+{
+    _init_colors(cube, (byte *) CUBE_CLR_STR);
+}
+
 void Cube_init(Cube * cube)
 {
     _init_blocks(cube);
-    _init_colors(cube, (byte *) CUBE_CLR_STR);
     _init_side_repr(cube);
+    _init_colors(cube, (byte *) CUBE_CLR_STR);
 }
 
 Cube * Cube_new(int size)
