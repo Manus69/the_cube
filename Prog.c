@@ -194,9 +194,10 @@ void Prog_update(Prog * prog)
         Cube_reset_clr(& prog->cube);
         Repr_init(& prog->repr, CUBE_CLR_STR);
     }
-    else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube))
+    else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
     {
-        Solver_solve(& prog->solver, & prog->repr);
+        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue);
+        printf("%d\n", Deq_len(& prog->cmd_queue));
     }
 
     Cube_update(& prog->cube);

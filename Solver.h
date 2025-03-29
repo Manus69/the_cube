@@ -8,11 +8,12 @@ typedef struct
     Vec     reprs;
     Vec     parents;
     Vec     scores;
+    Vec     cmds;
     Heap    queue;
     Htbl    tbl;
 }   Solver;
 
-int     Solver_solve(Solver * solver, Repr const * repr);
+int     Solver_solve(Solver * solver, Repr const * repr, Deq * cmd_queue);
 bool    Solver_new(Solver * solver);
 void    Solver_del(Solver * solver);
 
