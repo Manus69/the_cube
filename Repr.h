@@ -1,4 +1,6 @@
-#include "../_slib/_slib.h"
+#ifndef REPR_H
+#define REPR_H
+
 #include "master.h"
 
 typedef struct
@@ -10,6 +12,7 @@ byte *  Repr_side(Repr * repr, CLR clr);
 void    Repr_rot(Repr * repr, CLR clr, int dir);
 void    Repr_dbg(Repr const * repr, CLR clr);
 
+#endif
 
 
 

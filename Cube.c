@@ -1,5 +1,4 @@
 #include "Cube.h"
-#include "Repr.h"
 #include <stdlib.h>
 
 #define DELTA           0.05
@@ -10,22 +9,6 @@ static const Color _colors[] =
 {
     RED, GREEN, ORANGE, BLUE, YELLOW, WHITE, DARKGRAY,
 };
-
-static inline CLR CLR_fromc(char x)
-{
-    static const CLR _tbl[] =
-    {
-        ['r'] = CLR_R,
-        ['g'] = CLR_G,
-        ['o'] = CLR_O,
-        ['b'] = CLR_B,
-        ['y'] = CLR_Y,
-        ['w'] = CLR_W,
-        ['_'] = CLR_$,
-    };
-
-    return _tbl[(int) x];
-}
 
 void Block_init(Block * block, Vector3 center)
 {
@@ -179,8 +162,6 @@ void Cube_update(Cube * cube)
     if (_rot(cube, cube->anm.side_clr, cube->anm.w))
     {
         Repr_rot(& cube->idx_repr, cube->anm.side_clr, cube->anm.w > 0 ? 1 : -1);
-        //
-        // Repr_dbg(& cube->idx_repr, CLR_R);
         
         _Animation_reset(& cube->anm);
     }

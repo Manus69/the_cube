@@ -20,7 +20,6 @@ typedef struct
     float   phi;
 }   Animation;
 
-
 struct Cube
 {
     Block       blocks[DIM * DIM * DIM];
