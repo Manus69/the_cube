@@ -1,6 +1,12 @@
 #include "Repr.h"
+#include <string.h>
 
 #define CYC_LEN 4
+
+void Repr_init(Repr * repr, char const * cstr)
+{
+    memcpy(repr->buff, cstr, REPR_LEN);
+}
 
 static byte * _side_get(byte * side, int idx)
 {
@@ -111,9 +117,19 @@ void Repr_rot(Repr * repr, CLR clr, int dir)
     _cycle(repr, _clr_rot_data[clr][1], _idx_rot_data[clr][2], dir);
 }
 
+u64 Repr_hash(Repr const * repr)
+{
+    return hash_djb(repr->buff, CLR_$ * DIM * DIM);
+}
+
+u64 Repr_hashf(void const * ptr)
+{
+    return Repr_hash(ptr);
+}
+
 #include <stdio.h>
 
-void Repr_dbg(Repr const * repr, CLR clr)
+void Repr_idx_dbg(Repr const * repr, CLR clr)
 {
     for (int row = 0; row < DIM; row ++)
     {
@@ -124,4 +140,9 @@ void Repr_dbg(Repr const * repr, CLR clr)
         $nl;
     }
     $nl;
+}
+
+void Repr_clr_dbg(Repr const * repr)
+{
+    printf("%.*s\n", REPR_LEN, (char *) repr->buff);
 }

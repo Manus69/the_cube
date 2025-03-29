@@ -3,15 +3,21 @@
 
 #include "master.h"
 
+#define REPR_LEN (CLR_$ * DIM * DIM)
+
 typedef struct
 {
-    byte    buff[1 << 6];
+    byte    buff[REPR_LEN];
 }   Repr;
 
+void    Repr_init(Repr * repr, char const * cstr);
 byte *  Repr_get(Repr * repr, CLR clr, int idx);
 byte *  Repr_side(Repr * repr, CLR clr);
 void    Repr_rot(Repr * repr, CLR clr, int dir);
-void    Repr_dbg(Repr const * repr, CLR clr);
+u64     Repr_hash(Repr const * repr);
+u64     Repr_hashf(void const * ptr);
+void    Repr_idx_dbg(Repr const * repr, CLR clr);
+void    Repr_clr_dbg(Repr const * repr);
 
 #endif
 

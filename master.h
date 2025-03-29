@@ -6,6 +6,8 @@
 #include "../_slib/_slib.h"
 
 #define DIM 3
+#define CUBE_CLR_STR    "rrrrrrrrr" "ggggggggg" "ooooooooo" "bbbbbbbbb" "yyyyyyyyy" "wwwwwwwww"
+
 
 static inline int _row_col_idx(int row, int col)
 {

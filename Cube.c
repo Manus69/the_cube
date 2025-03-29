@@ -3,7 +3,6 @@
 
 #define DELTA           0.05
 #define HALF_SIZE       1
-#define CUBE_CLR_STR    "rrrrrrrrr" "ggggggggg" "ooooooooo" "bbbbbbbbb" "yyyyyyyyy" "wwwwwwwww"
 
 static const Color _colors[] =
 {

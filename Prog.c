@@ -1,17 +1,24 @@
 #include "Prog.h"
 #include "Cube.h"
+#include "Solver.h"
 #include <stdlib.h>
 
 #define WN      "The Cube"
 #define WW      800
 #define WH      600
-#define TFPS    120
+#define TFPS    60
+#define SPD0    3
+#define SPD1    4
 
 typedef enum
 {
     CNTRL_SPACE = CLR_$,
-    CNTR_TAB,
-    CNTRL_SHIFT,
+    CNTRL_S,
+    CNTRL_TAB, 
+
+    // hold down btns
+
+    CNTRL_SHIFT, 
     CNTRL_LEFT,
     CNTRL_RIGHT,
     CNTRL_UP,
@@ -26,10 +33,12 @@ typedef struct
 
 struct Prog
 {
+    Repr    repr;
     Cube    cube;
     Camera  cam;
     Input   input;
     Deq     cmd_queue;
+    Solver  solver;
     bool    runs;
 };
 
@@ -57,7 +66,9 @@ Prog * Prog_new(void)
 
     if (! (prog = calloc(1, sizeof(* prog))))       return NULL;
     if (! Deq_new(& prog->cmd_queue, sizeof(Cmd)))  return NULL;
+    if (! Solver_new(& prog->solver))               return NULL;
 
+    Repr_init(& prog->repr, CUBE_CLR_STR);
     _graphics_init(prog);
     _Cam_init(prog);
     Cube_init(& prog->cube);
@@ -71,6 +82,7 @@ Prog * Prog_new(void)
 void Prog_del(Prog * prog)
 {
     Deq_del(& prog->cmd_queue);
+    Solver_del(& prog->solver);
     CloseWindow();
     free(prog);
 }
@@ -100,7 +112,7 @@ static void _test(Prog * prog)
     }
 }
 
-static void _get_shuffle(Prog * prog, int len)
+static void _get_shuffle(Prog * prog, int len, char speed)
 {
     Cmd cmd;
     Cmd prev = {};
@@ -111,7 +123,7 @@ static void _get_shuffle(Prog * prog, int len)
     for (int k = 0; k < len; k ++)
     {
         cmd.clr = rng_xor(& x) % CLR_$;
-        cmd.dir = (char []){1, -1}[rng_xor(& x) % 2];
+        cmd.dir = (char []){speed, -speed}[rng_xor(& x) % 2];
 
         if (prev.clr == cmd.clr && prev.dir == -cmd.dir) cmd.dir *= -1;
 
@@ -133,17 +145,18 @@ void Prog_input(Prog * prog)
         [CLR_B] = KEY_B,    [CNTRL_RIGHT] = KEY_RIGHT,
         [CLR_Y] = KEY_Y,    [CNTRL_SHIFT] = KEY_LEFT_SHIFT,
         [CLR_W] = KEY_W,    [CNTRL_SPACE] = KEY_SPACE,
-                            [CNTR_TAB] = KEY_TAB,
+                            [CNTRL_TAB] = KEY_TAB,
+                            [CNTRL_S] = KEY_S,
     };
 
     Cmd cmd = {};
 
-    for (int k = 0; k <= CNTR_TAB; k ++)
+    for (int k = 0; k <= CNTRL_TAB; k ++)
     {
         prog->input.inputs[k] = IsKeyPressed(_key_map[k]);
     }
 
-    for (int k = CNTR_TAB; k < CNTRL_$; k ++)
+    for (int k = CNTRL_TAB; k < CNTRL_$; k ++)
     {
         prog->input.inputs[k] = IsKeyDown(_key_map[k]);
     }
@@ -155,13 +168,13 @@ void Prog_input(Prog * prog)
     if (Deq_len(& prog->cmd_queue) > 1)     { return ; }
     for (int k = CLR_R; k < CLR_$; k ++)
     {
-        if      (prog->input.inputs[CNTRL_SHIFT] && prog->input.inputs[k]) cmd = (Cmd) {k, -1};
-        else if (prog->input.inputs[k]) cmd = (Cmd) {k, 1};
+        if      (prog->input.inputs[CNTRL_SHIFT] && prog->input.inputs[k]) cmd = (Cmd) {k, -SPD0};
+        else if (prog->input.inputs[k]) cmd = (Cmd) {k, SPD0};
     }
     
     if (cmd.dir) { Deq_pushr_check(& prog->cmd_queue, & cmd); return; }
     // if (prog->input.inputs[CNTRL_SPACE])    _test(prog);
-    if (prog->input.inputs[CNTRL_SPACE])    _get_shuffle(prog, 20);
+    if (prog->input.inputs[CNTRL_SPACE])    _get_shuffle(prog, 20, SPD1);
 
 }
 
@@ -172,11 +185,18 @@ void Prog_update(Prog * prog)
     if (! Deq_empty(& prog->cmd_queue) && ! Cube_in_animation(& prog->cube))
     {
         cmd = $drf(Cmd) Deq_popl(& prog->cmd_queue);
-        Cube_rot(& prog->cube, cmd.clr, cmd.dir);    
+
+        Cube_rot(& prog->cube, cmd.clr, cmd.dir);
+        Repr_rot(& prog->repr, cmd.clr, cmd.dir);
     }
-    else if (prog->input.inputs[CNTR_TAB] && ! Cube_in_animation(& prog->cube))
+    else if (prog->input.inputs[CNTRL_TAB] && ! Cube_in_animation(& prog->cube))
     {
         Cube_reset_clr(& prog->cube);
+        Repr_init(& prog->repr, CUBE_CLR_STR);
+    }
+    else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube))
+    {
+        Solver_solve(& prog->solver, & prog->repr);
     }
 
     Cube_update(& prog->cube);
