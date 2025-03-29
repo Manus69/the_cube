@@ -16,8 +16,9 @@ typedef struct
 typedef struct
 {
     CLR     side_clr;
-    float   w;
-    float   phi;
+    float   dx;
+    int     k;
+    int     n;
 }   Animation;
 
 struct Cube
@@ -32,7 +33,7 @@ void    Cube_init(Cube * cube);
 void    Cube_del(Cube * cube);
 void    Cube_reset_clr(Cube * cube);
 void    Cube_draw(Cube const * cube);
-void    Cube_rot(Cube * cube, CLR side, float w);
+void    Cube_rot(Cube * cube, CLR side, char velocity);
 void    Cube_update(Cube * cube);
 bool    Cube_in_animation(Cube const * cube);
 

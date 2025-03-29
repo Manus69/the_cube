@@ -10,13 +10,22 @@ static const Color _colors[] =
     RED, GREEN, ORANGE, BLUE, YELLOW, WHITE, DARKGRAY,
 };
 
-void Block_init(Block * block, Vector3 center)
+static void _Block_gen_models(Block * block)
 {
     Mesh    mesh;
-    Matrix  f;
 
-    * block = (Block) {};
     mesh = GenMeshPoly(4, (HALF_SIZE * 2) / sqrt(2));
+
+    for (int k = 0; k < CLR_$; k ++)
+    {
+        block->side_models[k] = LoadModelFromMesh(mesh);
+        block->side_colors[k] = CLR_$;
+    }
+}
+
+static void _Block_init_pos(Block * block, Vector3 center)
+{
+    Matrix  f;
 
     block->center = center;
 
@@ -26,12 +35,6 @@ void Block_init(Block * block, Vector3 center)
     block->side_pos[CLR_G] = Vector3Add(center, (Vector3){HALF_SIZE, 0, 0});
     block->side_pos[CLR_Y] = Vector3Add(center, (Vector3){0, HALF_SIZE, 0});
     block->side_pos[CLR_W] = Vector3Add(center, (Vector3){0, -HALF_SIZE, 0});
-
-    for (int k = 0; k < CLR_$; k ++)
-    {
-        block->side_models[k] = LoadModelFromMesh(mesh);
-        block->side_colors[k] = CLR_$;
-    }
 
     f = MatrixRotateY(PI / 4);
     block->side_models[CLR_R].transform = MatrixMultiply(f, MatrixRotateX(PI / 2));
@@ -48,7 +51,7 @@ void Block_init_grid(Block * block, int x, int y, int z)
 
     pos = (Vector3){x * (HALF_SIZE + DELTA) * 2, y * (HALF_SIZE + DELTA) * 2, z * (HALF_SIZE + DELTA) * 2};
 
-    Block_init(block, pos);
+    _Block_init_pos(block, pos);
 }
 
 void Block_rot(Block * block, Vector3 axis, float x)
@@ -87,30 +90,33 @@ void Cube_draw(Cube const * cube)
 
 static bool _Animation_active(Animation const * anm)
 {
-    return anm->w > 0.0f || anm->w < 0.0f;
+    return anm->k < anm->n;
 }
 
 static bool _Animation_done(Animation const * anm)
 {
-    return fabs(anm->phi) >= 90.0f; 
+    return anm->k == anm->n;
 }
 
-static void _Animation_set(Animation * anm, CLR clr, float w)
+static void _Animation_init(Animation * anm, CLR clr, char velocity)
 {
-    anm->side_clr = clr;
-    anm->w = w;
-    anm->phi = 0;
+    int     n;
+    float   dx;
+
+    n = 30 / abs(velocity);
+    dx = (90.0 / n) * ((float []){1, -1}[velocity < 0]);
+
+    * anm = (Animation) { .dx = dx, .n = n, .side_clr = clr };
 }
 
 static void _Animation_reset(Animation * anm)
 {
-    anm->phi = 0;
-    anm->w = 0;
+    anm->n = 0;
 }
 
-static bool _Animation_inc(Animation * anm, float dx)
+static bool _Animation_inc(Animation * anm)
 {
-    anm->phi += dx;
+    anm->k ++;
 
     return ! _Animation_done(anm);
 }
@@ -130,24 +136,22 @@ static Vector3 _CLR_axis_map(CLR clr)
     return axes[clr];
 }
 
-static bool _rot(Cube * cube, CLR clr_side, float w)
+static bool _rot(Cube * cube, CLR clr_side, float dx)
 {
     byte *  side;
     int     idx;
     Vector3 axis;
-    double  dt;
 
     side = Repr_side(& cube->idx_repr, clr_side);
     axis = _CLR_axis_map(clr_side);
-    dt = GetFrameTime();
 
     for (int k = 0; k < DIM * DIM; k ++)
     {
         idx = side[k];
-        Block_rot(cube->blocks + idx, axis, w * dt);
+        Block_rot(cube->blocks + idx, axis, dx);
     }
 
-    return ! _Animation_inc(& cube->anm, w * dt);
+    return ! _Animation_inc(& cube->anm);
 }
 
 bool Cube_in_animation(Cube const * cube)
@@ -159,19 +163,19 @@ void Cube_update(Cube * cube)
 {
     if (! _Animation_active(& cube->anm)) return ;
 
-    if (_rot(cube, cube->anm.side_clr, cube->anm.w))
+    if (_rot(cube, cube->anm.side_clr, cube->anm.dx))
     {
-        Repr_rot(& cube->idx_repr, cube->anm.side_clr, cube->anm.w > 0 ? 1 : -1);
+        Repr_rot(& cube->idx_repr, cube->anm.side_clr, cube->anm.dx > 0 ? 1 : -1);
         
         _Animation_reset(& cube->anm);
     }
 }
 
-void Cube_rot(Cube * cube, CLR clr_side, float w)
+void Cube_rot(Cube * cube, CLR clr_side, char velocity)
 {
     if (_Animation_active(& cube->anm)) return ;
 
-    _Animation_set(& cube->anm, clr_side, w);
+    _Animation_init(& cube->anm, clr_side, velocity);
 }
 
 static int _repr_idx_map(CLR side, int row, int col)
@@ -200,9 +204,6 @@ static void _init_blocks(Cube * cube)
         {
             for (int z = 0; z < DIM; z ++)
             {
-                // if (y == 0)
-                //     printf("id : %d at (%d %d %d)\n", idx, x, y, z);
-
                 Block_init_grid(& cube->blocks[idx], x - DIM / 2, y - DIM / 2, z - DIM / 2);
                 idx ++;
             }
@@ -212,32 +213,16 @@ static void _init_blocks(Cube * cube)
 
 static void _init_colors(Cube * cube, byte const * clr_repr)
 {
-    // int idx, row, col, r_idx;
-
-    // r_idx = 0;
-    // for (CLR clr = CLR_R; clr < CLR_$; clr ++)
-    // {
-    //     for (int k = 0; k < DIM * DIM; k ++)
-    //     {
-    //         row = _idx_row(k);
-    //         col = _idx_col(k);
-    //         idx = _repr_idx_map(clr, row, col);
-
-    //         // printf("idx : %d clr : %d repr : %u\n", idx, clr, clr_repr[r_idx]);
-
-    //         cube->blocks[idx].side_colors[clr] = CLR_fromc(clr_repr[r_idx]);
-    //         r_idx ++;
-    //     }
-    // }
-
-    int     idx;
+    int idx;
+    CLR current;
 
     for (CLR clr = CLR_R; clr < CLR_$; clr ++)
     {
         for (int k = 0; k < DIM * DIM; k ++)
         {
             idx = * Repr_get(& cube->idx_repr, clr, k);
-            cube->blocks[idx].side_colors[clr] = CLR_fromc($drf(char) clr_repr + clr * 9 + k);
+            current = CLR_fromc(clr_repr[clr * DIM * DIM + k]);
+            cube->blocks[idx].side_colors[clr] = current;
         }
     }
 }
@@ -260,26 +245,19 @@ static void _init_side_repr(Cube * cube)
 
 void Cube_reset_clr(Cube * cube)
 {
-    _init_colors(cube, (byte *) CUBE_CLR_STR);
-}
-
-void Cube_init(Cube * cube)
-{
     _init_blocks(cube);
     _init_side_repr(cube);
     _init_colors(cube, (byte *) CUBE_CLR_STR);
 }
 
-Cube * Cube_new(int size)
+void Cube_init(Cube * cube)
 {
-    (void) size;
+    for (int k = 0; k < DIM * DIM * DIM; k ++)
+    {
+        _Block_gen_models(cube->blocks + k);
+    }
 
-    Cube * cube;
-
-    if (! (cube = calloc(1, sizeof(Cube)))) return NULL;
-    Cube_init(cube);
-
-    return cube;
+    Cube_reset_clr(cube);
 }
 
 void Cube_del(Cube * cube)
