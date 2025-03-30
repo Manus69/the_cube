@@ -203,6 +203,7 @@ void Prog_update(Prog * prog)
         //
         printf("CMD :      (%d %d)\n", cmd.clr, cmd.dir);
         printf("cum score:  %d\n", Repr_score_cum(& prog->repr));
+        printf("rod score : %d\n", Repr_score_rod(& prog->repr));
     }
     else if (prog->input.inputs[CNTRL_TAB] && ! Cube_in_animation(& prog->cube))
     {

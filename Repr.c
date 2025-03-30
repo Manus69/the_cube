@@ -29,6 +29,11 @@ byte * Repr_get_rc(Repr * repr, CLR clr, int row, int col)
     return Repr_get(repr, clr, _row_col_idx(row, col));
 }
 
+byte Repr_getv(Repr const * repr, CLR clr, int idx)
+{
+    return (repr->buff + (clr * DIM * DIM))[idx];
+}
+
 static void _cycle_rev(Repr * repr, CLR const * sides, int const * idxs)
 {
     byte    buff;
@@ -249,6 +254,122 @@ int Repr_score_cols(Repr const * repr)
 int Repr_score_cum(Repr const * repr)
 {
     return Repr_score_rows(repr) + Repr_score_cols(repr);
+}
+
+static int _score_cmp(Repr const * repr, CLR clr, int row, int col, byte ref)
+{
+    if (row < 0 || row >= DIM || col < 0 || col >= DIM) return 0;
+
+    return * Repr_get_rc((Repr *) repr, clr, row, col) != ref;
+}
+
+static int _score_tile(Repr const * repr, CLR clr, int row, int col)
+{
+    int     score;
+    byte    x;
+
+    x = * Repr_get_rc((Repr *) repr, clr, row, col);
+    score = 0;
+
+    score += _score_cmp(repr, clr, row, col - 1, x);
+    score += _score_cmp(repr, clr, row, col + 1, x);
+    score += _score_cmp(repr, clr, row - 1, col, x);
+    score += _score_cmp(repr, clr, row + 1, col, x);
+
+    return score;
+}
+
+static int _score_side(Repr const * repr, CLR clr)
+{
+    int score;
+
+    score = 0;
+    for (int row = 0; row < DIM; row ++)
+    {
+        for (int col = 0; col < DIM; col ++)
+        {
+            score += _score_tile(repr, clr, row, col);
+        }
+    }
+
+    return score;
+}
+
+int Repr_score_nbghr(Repr const * repr)
+{
+    int score;
+
+    score = 0;
+    for (CLR clr = 0; clr < CLR_$; clr ++)
+    {
+        score += _score_side(repr, clr);
+    }
+
+    return score;
+}
+
+static int _score_rod(byte const * lhs, byte const * rhs)
+{
+    int     score;
+
+    score = 0;
+
+    score += ! (lhs[0] == lhs[1] && rhs[0] == rhs[1]);
+    score += ! (lhs[2] == lhs[1] && rhs[2] == rhs[1]);
+
+    return score;
+}
+
+static int _fill_rod(Repr const * repr, byte * lhs, CLR lhs_clr, int lhs_idx[3], byte * rhs, CLR rhs_clr, int rhs_idx[3])
+{
+    for (int k = 0; k < DIM; k ++)
+    {
+        lhs[k] = Repr_getv(repr, lhs_clr, lhs_idx[k]);
+        rhs[k] = Repr_getv(repr, rhs_clr, rhs_idx[k]);
+    }
+
+    return _score_rod(lhs, rhs);
+}
+
+int Repr_score_rod(Repr const * repr)
+{
+    byte lhs[3] = {};
+    byte rhs[3] = {};
+    
+    int score;
+
+    score = 0;
+    score += _fill_rod(repr, lhs, CLR_B, (int []) {2, 5, 8}, rhs, CLR_R, (int []) {0, 3, 6});
+    score += _fill_rod(repr, lhs, CLR_R, (int []) {2, 5, 8}, rhs, CLR_G, (int []) {0, 3, 6});
+    score += _fill_rod(repr, lhs, CLR_G, (int []) {2, 5, 8}, rhs, CLR_O, (int []) {0, 3, 6});
+    score += _fill_rod(repr, lhs, CLR_O, (int []) {2, 5, 8}, rhs, CLR_B, (int []) {0, 3, 6});
+
+    score += _score_col(repr, CLR_R, 1);
+    score += _score_col(repr, CLR_G, 1);
+    score += _score_col(repr, CLR_O, 1);
+    score += _score_col(repr, CLR_B, 1);
+
+    score += _fill_rod(repr, lhs, CLR_R, (int []) {0, 1, 2}, rhs, CLR_Y, (int []) {6, 7, 8});
+    score += _fill_rod(repr, lhs, CLR_R, (int []) {6, 7, 8}, rhs, CLR_W, (int []) {0, 1, 2});
+    score += _fill_rod(repr, lhs, CLR_O, (int []) {0, 1, 2}, rhs, CLR_Y, (int []) {2, 1, 0});
+    score += _fill_rod(repr, lhs, CLR_O, (int []) {6, 7, 8}, rhs, CLR_W, (int []) {8, 7, 6});
+    
+    score += _score_row(Repr_get_rc((Repr *) repr, CLR_R, 1, 0));
+    score += _score_row(Repr_get_rc((Repr *) repr, CLR_Y, 1, 0));
+    score += _score_row(Repr_get_rc((Repr *) repr, CLR_O, 1, 0));
+    score += _score_row(Repr_get_rc((Repr *) repr, CLR_W, 1, 0));
+
+    score += _fill_rod(repr, lhs, CLR_G, (int []) {0, 1, 2}, rhs, CLR_Y, (int []) {8, 5, 2});
+    score += _fill_rod(repr, lhs, CLR_G, (int []) {6, 7, 8}, rhs, CLR_W, (int []) {2, 5, 8});
+    score += _fill_rod(repr, lhs, CLR_B, (int []) {0, 1, 2}, rhs, CLR_Y, (int []) {0, 3, 6});
+    score += _fill_rod(repr, lhs, CLR_B, (int []) {6, 7, 8}, rhs, CLR_W, (int []) {6, 3, 0});
+
+    score += _score_row(Repr_get_rc((Repr *) repr, CLR_B, 1, 0));
+    score += _score_col(repr, CLR_Y, 1);
+    score += _score_row(Repr_get_rc((Repr *) repr, CLR_G, 1, 0));
+    score += _score_col(repr, CLR_W, 1);
+
+    return score;
 }
 
 #include <stdio.h>

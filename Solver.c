@@ -63,20 +63,8 @@ static int _backtrack(Solver * solver, int idx, Deq * cmd_queue)
         parent_idx = $drf(int) Vec_get(& solver->parents, idx);
         cmd = $drf(Cmd) Vec_get(& solver->cmds, idx);
 
-        //
-        printf("current : ");
-        Repr_clr_dbg(Vec_get(& solver->reprs, idx));
-        if (parent_idx >= 0)
-        {
-            printf("parent : ");
-            Repr_clr_dbg(Vec_get(& solver->reprs, parent_idx));
-        }
-        printf("cmd : (%d %d)\n\n\n", cmd.clr, cmd.dir);
-        //
-
         if (cmd.clr == NO_IDX) break;
 
-        // cmd.dir *= -1;
         Deq_pushl_check(cmd_queue, & cmd);
         idx = parent_idx;
     }
@@ -93,10 +81,9 @@ static int _add_repr(Solver * solver, Repr const * repr, int parent, Cmd cmd)
     ids = (IdScore)
     {
         .id = Vec_len(& solver->reprs),
-        // .score = Repr_score(repr),
-        // .score = Repr_score_dist(repr),
-        // .score = Repr_score_rows(repr),
-        .score = Repr_score_cum(repr),
+        // .score = Repr_score_cum(repr),
+        // .score = Repr_score_nbghr(repr),
+        .score = Repr_score_rod(repr),
     };
 
     if (! Vec_push_check(& solver->reprs, repr))                return NO_IDX;
@@ -124,12 +111,11 @@ static int _solve(Solver * solver, Deq * cmd_queue)
         ids = $drf(IdScore) Heap_pop_top(& solver->queue, IdScore_cmpf, IdScore_swapf);
         current = Vec_get(& solver->reprs, ids.id);
 
+        //
         printf("%d\n", ids.id);
 
         if (Repr_solved(current))
         {
-            //
-            // Repr_clr_dbg(current);
             return _backtrack(solver, ids.id, cmd_queue);
         }
     
@@ -141,7 +127,6 @@ static int _solve(Solver * solver, Deq * cmd_queue)
                 if (_add_repr(solver, & next, ids.id, (Cmd) {clr, dir}) < 0) return NO_IDX;
             }
         }
-
     }
 }
 
