@@ -75,7 +75,6 @@ Prog * Prog_new(void)
 
     prog->runs = true;
 
-    // printf("%zu\n", sizeof(Prog));
     return prog;
 }
 
@@ -184,7 +183,6 @@ void Prog_input(Prog * prog)
     }
     
     if (cmd.dir) { Deq_pushr_check(& prog->cmd_queue, & cmd); return; }
-    // if (prog->input.inputs[CNTRL_SPACE])    _test(prog);
     if (prog->input.inputs[CNTRL_SPACE])    _get_shuffle(prog, 20, SPD1);
 
 }
@@ -201,9 +199,9 @@ void Prog_update(Prog * prog)
         Repr_rot(& prog->repr, cmd.clr, cmd.dir);
 
         //
-        printf("CMD :      (%d %d)\n", cmd.clr, cmd.dir);
-        printf("cum score:  %d\n", Repr_score_cum(& prog->repr));
-        printf("rod score : %d\n", Repr_score_rod(& prog->repr));
+        // printf("CMD :      (%d %d)\n", cmd.clr, cmd.dir);
+        // printf("cum score:  %d\n", Repr_score_cum(& prog->repr));
+        // printf("rod score : %d\n", Repr_score_rod(& prog->repr));
     }
     else if (prog->input.inputs[CNTRL_TAB] && ! Cube_in_animation(& prog->cube))
     {

@@ -81,13 +81,10 @@ static int _add_repr(Solver * solver, Repr const * repr, int parent, Cmd cmd)
     ids = (IdScore)
     {
         .id = Vec_len(& solver->reprs),
-        // .score = Repr_score_cum(repr),
-        // .score = Repr_score_nbghr(repr),
         .score = Repr_score_rod(repr),
     };
 
     if (! Vec_push_check(& solver->reprs, repr))                return NO_IDX;
-    if (! Vec_push_check(& solver->scores, & ids.score))        return NO_IDX;
     if (! Vec_push_check(& solver->cmds, & cmd))                return NO_IDX;
     if (! Vec_push_check(& solver->parents, & parent))          return NO_IDX;
     if (! Htbl_insert_check(& solver->tbl, repr, Repr_hashf))   return NO_IDX;
@@ -135,7 +132,6 @@ static void _reset(Solver * solver)
     Vec_pop_all(& solver->reprs);
     Vec_pop_all(& solver->parents);
     Vec_pop_all(& solver->cmds);
-    Vec_pop_all(& solver->scores);
     Heap_pop_all(& solver->queue);
     Htbl_purge(& solver->tbl);
 }
@@ -149,12 +145,11 @@ int Solver_solve(Solver * solver, Repr const * repr, Deq * cmd_queue)
     return _solve(solver, cmd_queue);
 }
 
-#define _DC (1 << 18)
+#define _DC (1 << 16)
 bool Solver_new(Solver * solver)
 {
     return  Vec_new_capacity(& solver->reprs, sizeof(Repr), _DC) && 
             Vec_new_capacity(& solver->parents, sizeof(int), _DC) &&
-            Vec_new_capacity(& solver->scores, sizeof(int), _DC) &&
             Vec_new_capacity(& solver->cmds, sizeof(Cmd), _DC) &&
             Heap_new_capacity(& solver->queue, sizeof(IdScore), _DC) &&
             Htbl_new_capacity(& solver->tbl, sizeof(Repr), _DC);
@@ -164,7 +159,6 @@ void Solver_del(Solver * solver)
 {
     Vec_del(& solver->reprs);
     Vec_del(& solver->parents);
-    Vec_del(& solver->scores);
     Vec_del(& solver->cmds);
     Heap_del(& solver->queue);
     Htbl_del(&  solver->tbl);

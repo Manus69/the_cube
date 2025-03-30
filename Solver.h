@@ -7,7 +7,6 @@ typedef struct
 {
     Vec     reprs;
     Vec     parents;
-    Vec     scores;
     Vec     cmds;
     Heap    queue;
     Htbl    tbl;

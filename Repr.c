@@ -3,7 +3,6 @@
 
 #define CYC_LEN 4
 
-
 void Repr_init(Repr * repr, char const * cstr)
 {
     memcpy(repr->buff, cstr, REPR_LEN);
@@ -165,12 +164,10 @@ int Repr_score_dist(Repr const * repr)
     };
 
     int score;
-    // CLR clr;
 
     score = 0;
     for (int k = 0; k < REPR_LEN; k ++)
     {
-        // clr = k % (DIM * DIM);
         score += clr_dist[CLR_fromc(CUBE_CLR_STR[k])][CLR_fromc(repr->buff[k])];
     }
 
@@ -401,7 +398,6 @@ void Repr_idx_dbg(Repr const * repr, CLR clr)
 
 void Repr_clr_dbg(Repr const * repr)
 {
-    // printf("%.*s\n", REPR_LEN, (char *) repr->buff);
     for (CLR clr = 0; clr < CLR_$; clr ++)
     {
         _dbg_side(repr, clr, "%c");
