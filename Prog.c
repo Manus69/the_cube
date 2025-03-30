@@ -132,6 +132,17 @@ static void _get_shuffle(Prog * prog, int len, char speed)
     }
 }
 
+static void _queue_speed_adjust(Prog * prog, int val)
+{
+    Cmd * cmd;
+
+    for (int k = 0; k < Deq_len(& prog->cmd_queue); k ++)
+    {
+        cmd = Deq_get(& prog->cmd_queue, k);
+        cmd->dir *= val;
+    }
+}
+
 #define CAM_W   3
 #define CUBE_W  360
 
@@ -185,9 +196,13 @@ void Prog_update(Prog * prog)
     if (! Deq_empty(& prog->cmd_queue) && ! Cube_in_animation(& prog->cube))
     {
         cmd = $drf(Cmd) Deq_popl(& prog->cmd_queue);
-
+        
         Cube_rot(& prog->cube, cmd.clr, cmd.dir);
         Repr_rot(& prog->repr, cmd.clr, cmd.dir);
+
+        //
+        printf("CMD :      (%d %d)\n", cmd.clr, cmd.dir);
+        printf("cum score:  %d\n", Repr_score_cum(& prog->repr));
     }
     else if (prog->input.inputs[CNTRL_TAB] && ! Cube_in_animation(& prog->cube))
     {
@@ -197,6 +212,8 @@ void Prog_update(Prog * prog)
     else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
     {
         Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue);
+        _queue_speed_adjust(prog, 4);
+        //
         printf("%d\n", Deq_len(& prog->cmd_queue));
     }
 

@@ -1,6 +1,8 @@
 #include "Solver.h"
 #include <string.h>
 
+#define LIMIT (1 << 20)
+
 typedef struct
 {
     int id;
@@ -15,19 +17,6 @@ bool Repr_solved(Repr const * repr)
     }
 
     return true;
-}
-
-int Repr_score(Repr const * repr)
-{
-    int score;
-
-    score = 0;
-    for (int k = 0; k < REPR_LEN; k ++)
-    {
-        score += (repr->buff[k] != CUBE_CLR_STR[k]); 
-    }
-
-    return score;
 }
 
 void Repr_next(Repr * restrict dst, Repr const * src, CLR clr, int dir)
@@ -63,6 +52,7 @@ static int IdScore_cmpf(void const * lhs, void const * rhs)
 
 $swapf_gen(IdScore)
 
+#include <stdio.h>
 static int _backtrack(Solver * solver, int idx, Deq * cmd_queue)
 {
     Cmd cmd;
@@ -73,10 +63,21 @@ static int _backtrack(Solver * solver, int idx, Deq * cmd_queue)
         parent_idx = $drf(int) Vec_get(& solver->parents, idx);
         cmd = $drf(Cmd) Vec_get(& solver->cmds, idx);
 
+        //
+        printf("current : ");
+        Repr_clr_dbg(Vec_get(& solver->reprs, idx));
+        if (parent_idx >= 0)
+        {
+            printf("parent : ");
+            Repr_clr_dbg(Vec_get(& solver->reprs, parent_idx));
+        }
+        printf("cmd : (%d %d)\n\n\n", cmd.clr, cmd.dir);
+        //
+
         if (cmd.clr == NO_IDX) break;
 
-        cmd.dir *= -1;
-        Deq_pushr_check(cmd_queue, & cmd);
+        // cmd.dir *= -1;
+        Deq_pushl_check(cmd_queue, & cmd);
         idx = parent_idx;
     }
 
@@ -92,62 +93,86 @@ static int _add_repr(Solver * solver, Repr const * repr, int parent, Cmd cmd)
     ids = (IdScore)
     {
         .id = Vec_len(& solver->reprs),
-        .score = Repr_score(repr),
+        // .score = Repr_score(repr),
+        // .score = Repr_score_dist(repr),
+        // .score = Repr_score_rows(repr),
+        .score = Repr_score_cum(repr),
     };
 
     if (! Vec_push_check(& solver->reprs, repr))                return NO_IDX;
     if (! Vec_push_check(& solver->scores, & ids.score))        return NO_IDX;
     if (! Vec_push_check(& solver->cmds, & cmd))                return NO_IDX;
     if (! Vec_push_check(& solver->parents, & parent))          return NO_IDX;
+    if (! Htbl_insert_check(& solver->tbl, repr, Repr_hashf))   return NO_IDX;
     if (! Heap_insert_check(& solver->queue, & ids, IdScore_cmpf, IdScore_swapf))
         return NO_IDX;
 
     return 1;
 }
 
-static int _visit(Solver * solver, Deq * cmd_queue)
+static int _solve(Solver * solver, Deq * cmd_queue)
 {
     IdScore ids;
     Repr *  current;
     Repr    next;
 
-    ids = $drf(IdScore) Heap_pop_top(& solver->queue, IdScore_cmpf, IdScore_swapf);
-    current = Vec_get(& solver->reprs, ids.id);
-
-    if (Repr_solved(current))
+    while (true)
     {
-        //
-        Repr_clr_dbg(current);
-        return _backtrack(solver, ids.id, cmd_queue);
-    }
+        if (Vec_len(& solver->reprs) > LIMIT)   return NO_IDX;
+        if (Heap_empty(& solver->queue))        return NO_IDX;
 
-    for (CLR clr = 0; clr < CLR_$; clr ++)
-    {
-        for (int dir = -1; dir <= 1; dir += 2)
+        ids = $drf(IdScore) Heap_pop_top(& solver->queue, IdScore_cmpf, IdScore_swapf);
+        current = Vec_get(& solver->reprs, ids.id);
+
+        printf("%d\n", ids.id);
+
+        if (Repr_solved(current))
         {
-            Repr_next(& next, current, clr, dir);
-            if (_add_repr(solver, & next, ids.id, (Cmd) {clr, dir}) < 0) return NO_IDX;
+            //
+            // Repr_clr_dbg(current);
+            return _backtrack(solver, ids.id, cmd_queue);
         }
-    }
+    
+        for (CLR clr = 0; clr < CLR_$; clr ++)
+        {
+            for (int dir = -1; dir <= 1; dir += 2)
+            {
+                Repr_next(& next, current, clr, dir);
+                if (_add_repr(solver, & next, ids.id, (Cmd) {clr, dir}) < 0) return NO_IDX;
+            }
+        }
 
-    return _visit(solver, cmd_queue);
+    }
+}
+
+static void _reset(Solver * solver)
+{
+    Vec_pop_all(& solver->reprs);
+    Vec_pop_all(& solver->parents);
+    Vec_pop_all(& solver->cmds);
+    Vec_pop_all(& solver->scores);
+    Heap_pop_all(& solver->queue);
+    Htbl_purge(& solver->tbl);
 }
 
 int Solver_solve(Solver * solver, Repr const * repr, Deq * cmd_queue)
 {
+    _reset(solver);
+
     if (_add_repr(solver, repr, NO_IDX, (Cmd) {NO_IDX, NO_IDX}) < 0) return NO_IDX;
 
-    return _visit(solver, cmd_queue);
+    return _solve(solver, cmd_queue);
 }
 
+#define _DC (1 << 18)
 bool Solver_new(Solver * solver)
 {
-    return  Vec_new(& solver->reprs, sizeof(Repr)) && 
-            Vec_new(& solver->parents, sizeof(int)) &&
-            Vec_new(& solver->scores, sizeof(int)) &&
-            Vec_new(& solver->cmds, sizeof(Cmd)) &&
-            Heap_new(& solver->queue, sizeof(IdScore)) &&
-            Htbl_new(& solver->tbl, sizeof(Repr));
+    return  Vec_new_capacity(& solver->reprs, sizeof(Repr), _DC) && 
+            Vec_new_capacity(& solver->parents, sizeof(int), _DC) &&
+            Vec_new_capacity(& solver->scores, sizeof(int), _DC) &&
+            Vec_new_capacity(& solver->cmds, sizeof(Cmd), _DC) &&
+            Heap_new_capacity(& solver->queue, sizeof(IdScore), _DC) &&
+            Htbl_new_capacity(& solver->tbl, sizeof(Repr), _DC);
 }
 
 void Solver_del(Solver * solver)

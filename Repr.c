@@ -3,6 +3,7 @@
 
 #define CYC_LEN 4
 
+
 void Repr_init(Repr * repr, char const * cstr)
 {
     memcpy(repr->buff, cstr, REPR_LEN);
@@ -21,6 +22,11 @@ byte * Repr_side(Repr * repr, CLR clr)
 byte * Repr_get(Repr * repr, CLR clr, int idx)
 {
     return _side_get(Repr_side(repr, clr), idx);
+}
+
+byte * Repr_get_rc(Repr * repr, CLR clr, int row, int col)
+{
+    return Repr_get(repr, clr, _row_col_idx(row, col));
 }
 
 static void _cycle_rev(Repr * repr, CLR const * sides, int const * idxs)
@@ -127,7 +133,137 @@ u64 Repr_hashf(void const * ptr)
     return Repr_hash(ptr);
 }
 
+
+int Repr_score(Repr const * repr)
+{
+    int score;
+
+    score = 0;
+    for (int k = 0; k < REPR_LEN; k ++)
+    {
+        score += (repr->buff[k] != CUBE_CLR_STR[k]); 
+    }
+
+    return score;
+}
+
+int Repr_score_dist(Repr const * repr)
+{
+    static const int clr_dist[CLR_$][CLR_$] =
+    {
+        {0, 1, 2, 1, 1, 1},
+        {1, 0, 1, 2, 1, 1},
+        {2, 1, 0, 1, 1, 1},
+        {1, 2, 1, 0, 1, 1},
+        {1, 1, 1, 1, 0, 2},
+        {1, 1, 1, 1, 2, 0},
+    };
+
+    int score;
+    // CLR clr;
+
+    score = 0;
+    for (int k = 0; k < REPR_LEN; k ++)
+    {
+        // clr = k % (DIM * DIM);
+        score += clr_dist[CLR_fromc(CUBE_CLR_STR[k])][CLR_fromc(repr->buff[k])];
+    }
+
+    return score;
+}
+
+static int _score_row(byte const * row)
+{
+    if (row[0] == row[1] && row[1] == row[2] && row[2] == row[0]) return 0;
+    if (row[0] == row[1]) return 1;
+    if (row[1] == row[2]) return 1;
+
+    return 2;
+}
+
+static int _score_rows(Repr const * repr, CLR clr)
+{
+    int     score;
+    
+    score = 0;
+    
+    for (int k = 0; k < DIM; k ++)
+    {
+        score += _score_row(Repr_get_rc((Repr *) repr, clr, k, 0));
+    }
+
+    return score;
+}
+
+int Repr_score_rows(Repr const * repr)
+{
+    int score;
+    
+    score = 0;
+    for (CLR clr = 0; clr < CLR_$; clr ++)
+    {
+        score += _score_rows(repr, clr);   
+    }
+
+    return score;
+}
+
+static int _score_col(Repr const * repr, CLR clr, int col)
+{
+    byte buff[] = 
+    {
+        * Repr_get_rc((Repr *) repr, clr, 0, col), 
+        * Repr_get_rc((Repr *) repr, clr, 1, col), 
+        * Repr_get_rc((Repr *) repr, clr, 2, col),
+    };
+
+    return _score_row(buff);
+}
+
+static int _score_cols(Repr const * repr, CLR clr)
+{
+    int score;
+
+    score = 0;
+    for (int col = 0; col < DIM; col ++)
+    {
+        score += _score_col(repr, clr, col);
+    }
+
+    return score;
+}
+
+int Repr_score_cols(Repr const * repr)
+{
+    int score;
+
+    score = 0;
+    for (CLR clr = 0; clr < CLR_$; clr ++)
+    {
+        score += _score_cols(repr, clr);
+    }
+
+    return score;
+}
+
+int Repr_score_cum(Repr const * repr)
+{
+    return Repr_score_rows(repr) + Repr_score_cols(repr);
+}
+
 #include <stdio.h>
+
+static void _dbg_side(Repr const * repr, CLR clr, char const * fmt)
+{
+    for (int row = 0; row < DIM; row ++)
+    {
+        for (int col = 0; col < DIM; col ++)
+        {
+            printf(fmt, * Repr_get((Repr *) repr, clr, _row_col_idx(row, col)));
+        }
+    }
+    printf(" ");
+}
 
 void Repr_idx_dbg(Repr const * repr, CLR clr)
 {
@@ -144,5 +280,10 @@ void Repr_idx_dbg(Repr const * repr, CLR clr)
 
 void Repr_clr_dbg(Repr const * repr)
 {
-    printf("%.*s\n", REPR_LEN, (char *) repr->buff);
+    // printf("%.*s\n", REPR_LEN, (char *) repr->buff);
+    for (CLR clr = 0; clr < CLR_$; clr ++)
+    {
+        _dbg_side(repr, clr, "%c");
+    }
+    $nl;
 }
