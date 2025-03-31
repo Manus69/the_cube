@@ -3,6 +3,7 @@
 #include "Prog.h"
 
 //icon
+//crosses?
 
 int main()
 {

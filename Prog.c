@@ -39,6 +39,9 @@ struct Prog
     Input   input;
     Deq     cmd_queue;
     Solver  solver;
+    //
+    SolverM solverM;
+    //
     bool    runs;
 };
 
@@ -46,6 +49,7 @@ static void _graphics_init(Prog * prog)
 {
     (void) prog;
 
+    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT);
     InitWindow(WW, WH, WN);
     SetTargetFPS(TFPS);
 }
@@ -68,6 +72,10 @@ Prog * Prog_new(void)
     if (! Deq_new(& prog->cmd_queue, sizeof(Cmd)))  return NULL;
     if (! Solver_new(& prog->solver))               return NULL;
 
+    //
+    if (! SolverM_new(& prog->solverM))             return NULL;
+    //
+    
     Repr_init(& prog->repr, CUBE_CLR_STR);
     _graphics_init(prog);
     _Cam_init(prog);
@@ -82,6 +90,9 @@ void Prog_del(Prog * prog)
 {
     Deq_del(& prog->cmd_queue);
     Solver_del(& prog->solver);
+    //
+    SolverM_del(& prog->solverM);
+    //
     CloseWindow();
     free(prog);
 }
@@ -201,7 +212,8 @@ void Prog_update(Prog * prog)
         //
         // printf("CMD :      (%d %d)\n", cmd.clr, cmd.dir);
         // printf("cum score:  %d\n", Repr_score_cum(& prog->repr));
-        // printf("rod score : %d\n", Repr_score_rod(& prog->repr));
+        // printf("rod score :   %d\n", Repr_score_rod(& prog->repr));
+        // printf("test score:   %d\n", Repr_score_test(& prog->repr));
     }
     else if (prog->input.inputs[CNTRL_TAB] && ! Cube_in_animation(& prog->cube))
     {
@@ -210,9 +222,11 @@ void Prog_update(Prog * prog)
     }
     else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
     {
-        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue);
-        _queue_speed_adjust(prog, 4);
+        // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_rod);
         //
+        SolverM_solve(& prog->solverM, & prog->repr, & prog->cmd_queue, Repr_score_rod);
+        _queue_speed_adjust(prog, 4);
+
         printf("%d\n", Deq_len(& prog->cmd_queue));
     }
 
@@ -224,11 +238,12 @@ void Prog_draw(Prog * prog)
     BeginDrawing();
     ClearBackground(LIGHTGRAY);
 
+    DrawRectangleGradientV(0, 0, WW, WH, DARKGRAY, DARKPURPLE);
+
     BeginMode3D(prog->cam);
-    DrawGrid(100, 1);
+    // DrawGrid(100, 1);
 
     Cube_draw(& prog->cube);
-
     EndMode3D();
 
     DrawFPS(10, 10);

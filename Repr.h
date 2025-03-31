@@ -11,11 +11,13 @@ typedef struct
 }   Repr;
 
 int     Repr_score(Repr const * repr);
-int     Repr_score_dist(Repr const * repr);
+int     Repr_score_dist(Repr const * repr, byte const * rhs);
 int     Repr_score_rows(Repr const * repr);
 int     Repr_score_cum(Repr const * repr);
 int     Repr_score_nbghr(Repr const * repr);
 int     Repr_score_rod(Repr const * repr);
+int     Repr_score_cross(Repr const * repr);
+int     Repr_score_test(Repr const * repr);
 void    Repr_init(Repr * repr, char const * cstr);
 byte *  Repr_get(Repr * repr, CLR clr, int idx);
 byte *  Repr_get_rc(Repr * repr, CLR clr, int row, int col);

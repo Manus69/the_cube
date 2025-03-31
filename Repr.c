@@ -33,6 +33,16 @@ byte Repr_getv(Repr const * repr, CLR clr, int idx)
     return (repr->buff + (clr * DIM * DIM))[idx];
 }
 
+byte Repr_getv_rc(Repr const * repr, CLR clr, int row, int col)
+{
+    return Repr_getv(repr, clr, _row_col_idx(row, col));
+}
+
+bool Repr_is_clr(Repr const * repr, CLR side, int idx, CLR clr)
+{
+    return CLR_fromc(Repr_getv(repr, side, idx)) == clr;
+}
+
 static void _cycle_rev(Repr * repr, CLR const * sides, int const * idxs)
 {
     byte    buff;
@@ -137,21 +147,25 @@ u64 Repr_hashf(void const * ptr)
     return Repr_hash(ptr);
 }
 
-
-int Repr_score(Repr const * repr)
+int Repr_score_diff(Repr const * repr, byte const * rhs)
 {
     int score;
 
     score = 0;
     for (int k = 0; k < REPR_LEN; k ++)
     {
-        score += (repr->buff[k] != CUBE_CLR_STR[k]); 
+        score += (repr->buff[k] != rhs[k]);
     }
 
     return score;
 }
 
-int Repr_score_dist(Repr const * repr)
+int Repr_score(Repr const * repr)
+{
+    return Repr_score_diff(repr, (byte const *) CUBE_CLR_STR);
+}
+
+int Repr_score_dist(Repr const * repr, byte const * rhs)
 {
     static const int clr_dist[CLR_$][CLR_$] =
     {
@@ -168,7 +182,7 @@ int Repr_score_dist(Repr const * repr)
     score = 0;
     for (int k = 0; k < REPR_LEN; k ++)
     {
-        score += clr_dist[CLR_fromc(CUBE_CLR_STR[k])][CLR_fromc(repr->buff[k])];
+        score += clr_dist[CLR_fromc(rhs[k])][CLR_fromc(repr->buff[k])];
     }
 
     return score;
@@ -176,7 +190,7 @@ int Repr_score_dist(Repr const * repr)
 
 static int _score_row(byte const * row)
 {
-    if (row[0] == row[1] && row[1] == row[2] && row[2] == row[0]) return 0;
+    if (row[0] == row[1] && row[1] == row[2] && row[2] == row[0]) return 0; //
     if (row[0] == row[1]) return 1;
     if (row[1] == row[2]) return 1;
 
@@ -248,61 +262,42 @@ int Repr_score_cols(Repr const * repr)
     return score;
 }
 
-int Repr_score_cum(Repr const * repr)
+static int _score_block(Repr const * repr, CLR clr, int row, int col)
 {
-    return Repr_score_rows(repr) + Repr_score_cols(repr);
+    return  !  (Repr_getv_rc(repr, clr, row, col) == Repr_getv_rc(repr, clr, row, col + 1) &&
+                Repr_getv_rc(repr, clr, row, col) == Repr_getv_rc(repr, clr, row + 1, col) &&
+                Repr_getv_rc(repr, clr, row, col) == Repr_getv_rc(repr, clr, row + 1, col + 1));
 }
 
-static int _score_cmp(Repr const * repr, CLR clr, int row, int col, byte ref)
-{
-    if (row < 0 || row >= DIM || col < 0 || col >= DIM) return 0;
-
-    return * Repr_get_rc((Repr *) repr, clr, row, col) != ref;
-}
-
-static int _score_tile(Repr const * repr, CLR clr, int row, int col)
-{
-    int     score;
-    byte    x;
-
-    x = * Repr_get_rc((Repr *) repr, clr, row, col);
-    score = 0;
-
-    score += _score_cmp(repr, clr, row, col - 1, x);
-    score += _score_cmp(repr, clr, row, col + 1, x);
-    score += _score_cmp(repr, clr, row - 1, col, x);
-    score += _score_cmp(repr, clr, row + 1, col, x);
-
-    return score;
-}
-
-static int _score_side(Repr const * repr, CLR clr)
+static int _score_blocks(Repr const * repr, CLR clr)
 {
     int score;
 
     score = 0;
-    for (int row = 0; row < DIM; row ++)
-    {
-        for (int col = 0; col < DIM; col ++)
-        {
-            score += _score_tile(repr, clr, row, col);
-        }
-    }
+    score += _score_block(repr, clr, 0, 0);
+    score += _score_block(repr, clr, 0, 1);
+    score += _score_block(repr, clr, 1, 0);
+    score += _score_block(repr, clr, 1, 1);
 
     return score;
 }
 
-int Repr_score_nbghr(Repr const * repr)
+int Repr_score_blocks(Repr const * repr)
 {
     int score;
 
     score = 0;
     for (CLR clr = 0; clr < CLR_$; clr ++)
     {
-        score += _score_side(repr, clr);
+        score += _score_blocks(repr, clr);
     }
 
     return score;
+}
+
+int Repr_score_cum(Repr const * repr)
+{
+    return Repr_score_rows(repr) + Repr_score_cols(repr);
 }
 
 static int _score_rod(byte const * lhs, byte const * rhs)
@@ -367,6 +362,11 @@ int Repr_score_rod(Repr const * repr)
     score += _score_col(repr, CLR_W, 1);
 
     return score;
+}
+
+int Repr_score_test(Repr const * repr)
+{
+    return Repr_score_rod(repr) * Repr_score(repr);
 }
 
 #include <stdio.h>
