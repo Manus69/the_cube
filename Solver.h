@@ -8,6 +8,7 @@ typedef struct
     Vec     reprs;
     Vec     parents;
     Vec     cmds;
+    Vec     depth;
     Heap    queue;
     Htbl    tbl;
 }   Solver;

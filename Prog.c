@@ -40,7 +40,7 @@ struct Prog
     Deq     cmd_queue;
     Solver  solver;
     //
-    SolverM solverM;
+    // SolverM solverM;
     //
     bool    runs;
 };
@@ -73,7 +73,7 @@ Prog * Prog_new(void)
     if (! Solver_new(& prog->solver))               return NULL;
 
     //
-    if (! SolverM_new(& prog->solverM))             return NULL;
+    // if (! SolverM_new(& prog->solverM))             return NULL;
     //
     
     Repr_init(& prog->repr, CUBE_CLR_STR);
@@ -91,7 +91,7 @@ void Prog_del(Prog * prog)
     Deq_del(& prog->cmd_queue);
     Solver_del(& prog->solver);
     //
-    SolverM_del(& prog->solverM);
+    // SolverM_del(& prog->solverM);
     //
     CloseWindow();
     free(prog);
@@ -107,18 +107,13 @@ static void _Cam_roty(Camera3D * cam, float x)
     cam->position = Vector3Transform(cam->position, MatrixRotateY(x * DEG2RAD));
 }
 
-// static void _Cam_rotv(Camera3D * cam, float x)
-// {
-//     cam->position = Vector3Transform(cam->position, MatrixRotate((Vector3){1, 0, -1}, x * DEG2RAD));
-// }
-
 static void _test(Prog * prog)
 {
     Cmd seq[] = {{0, -1}, {2, 1}, {4, -1}, {5, 1}, {0, 1}, {2, -1}};
 
     for (int k = 0; (unsigned) k < sizeof(seq) / sizeof(* seq); k ++)
     {
-        Deq_pushr_check(& prog->cmd_queue, seq + k);
+        Deq_pushr(& prog->cmd_queue, seq + k);
     }
 }
 
@@ -132,12 +127,12 @@ static void _get_shuffle(Prog * prog, int len, char speed)
 
     for (int k = 0; k < len; k ++)
     {
-        cmd.clr = rng_xor(& x) % CLR_$;
-        cmd.dir = (char []){speed, -speed}[rng_xor(& x) % 2];
+        cmd.clr = sfl_rng(& x) % CLR_$;
+        cmd.dir = (char []){speed, -speed}[sfl_rng(& x) % 2];
 
         if (prev.clr == cmd.clr && prev.dir == -cmd.dir) cmd.dir *= -1;
 
-        Deq_pushr_check(& prog->cmd_queue, & cmd);
+        Deq_pushr(& prog->cmd_queue, & cmd);
         prev = cmd;
     }
 }
@@ -193,7 +188,7 @@ void Prog_input(Prog * prog)
         else if (prog->input.inputs[k]) cmd = (Cmd) {k, SPD0};
     }
     
-    if (cmd.dir) { Deq_pushr_check(& prog->cmd_queue, & cmd); return; }
+    if (cmd.dir) { Deq_pushr(& prog->cmd_queue, & cmd); return; }
     if (prog->input.inputs[CNTRL_SPACE])    _get_shuffle(prog, 20, SPD1);
 
 }
@@ -222,9 +217,9 @@ void Prog_update(Prog * prog)
     }
     else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
     {
-        // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_rod);
+        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_rod);
         //
-        SolverM_solve(& prog->solverM, & prog->repr, & prog->cmd_queue, Repr_score_rod);
+        // SolverM_solve(& prog->solverM, & prog->repr, & prog->cmd_queue, Repr_score_rod);
         _queue_speed_adjust(prog, 4);
 
         printf("%d\n", Deq_len(& prog->cmd_queue));

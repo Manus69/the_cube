@@ -1,9 +1,15 @@
-#define _SLIB_IMPL
-#include "../_slib/_slib.h"
+#define _SFLIB_IMPL
+#include "../_sflib/_sflib_cont.h"
 #include "Prog.h"
 
 //icon
-//crosses?
+//redo solver
+//prune
+//investigate layers
+//investigate the mysterious segfault
+//scaling score slice
+
+//lib ringbuffer
 
 int main()
 {

@@ -79,7 +79,10 @@ void Block_draw(const Block * block)
 
 void draw_Blocks(const Block * blocks, int n)
 {
-    $mem_map(blocks, Block, n, Block_draw);
+    for (int k = 0; k < n; k ++)
+    {
+        Block_draw(blocks + k);
+    }
 }
 
 void Cube_draw(Cube const * cube)

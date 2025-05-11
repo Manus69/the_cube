@@ -3,7 +3,8 @@
 
 #include <raylib.h>
 #include <raymath.h>
-#include "../_slib/_slib.h"
+// #include "../_slib/_slib.h"
+#include "../_sflib/_sflib_cont.h"
 
 #define DIM 3
 #define CUBE_CLR_STR    "rrrrrrrrr" "ggggggggg" "ooooooooo" "bbbbbbbbb" "yyyyyyyyy" "wwwwwwwww"

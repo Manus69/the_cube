@@ -139,7 +139,7 @@ void Repr_rot(Repr * repr, CLR clr, int dir)
 
 u64 Repr_hash(Repr const * repr)
 {
-    return hash_djb(repr->buff, CLR_$ * DIM * DIM);
+    return sfl_hash(repr->buff, CLR_$ * DIM * DIM);
 }
 
 u64 Repr_hashf(void const * ptr)
@@ -366,7 +366,7 @@ int Repr_score_rod(Repr const * repr)
 
 int Repr_score_test(Repr const * repr)
 {
-    return Repr_score_rod(repr) * Repr_score(repr);
+    return (Repr_score_rod(repr) + 1) * (Repr_score(repr) + 1);
 }
 
 #include <stdio.h>
