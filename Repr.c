@@ -369,6 +369,83 @@ int Repr_score_test(Repr const * repr)
     return (Repr_score_rod(repr) + 1) * (Repr_score(repr) + 1);
 }
 
+#define TRIPLE_SCORE 3
+#define DOUBLE_SCORE 2
+
+static int _score_central_bar(Repr const * repr, CLR clr, int idxs[3])
+{
+    if (Repr_getv(repr, clr, idxs[0]) == Repr_getv(repr, clr, idxs[1]) && 
+        Repr_getv(repr, clr, idxs[1]) == Repr_getv(repr, clr, idxs[2]))
+    {
+        return TRIPLE_SCORE;
+    }
+    if (Repr_getv(repr, clr, idxs[0]) == Repr_getv(repr, clr, idxs[1]) || 
+        Repr_getv(repr, clr, idxs[1]) == Repr_getv(repr, clr, idxs[2]))
+    {
+        return DOUBLE_SCORE;
+    }
+
+    return 0;
+}
+
+static int _score_side_bar(Repr const * repr, CLR face, int fidxs[3], CLR side, int sidxs[3])
+{
+    if (Repr_getv(repr, face, fidxs[0]) == Repr_getv(repr, face, fidxs[1]) && 
+        Repr_getv(repr, face, fidxs[1]) == Repr_getv(repr, face, fidxs[2]) &&
+        Repr_getv(repr, side, sidxs[0]) == Repr_getv(repr, side, sidxs[1]) && 
+        Repr_getv(repr, side, sidxs[1]) == Repr_getv(repr, side, sidxs[2]))
+    {
+        return TRIPLE_SCORE;
+    }
+    if (Repr_getv(repr, face, fidxs[0]) == Repr_getv(repr, face, fidxs[1]) &&
+        Repr_getv(repr, side, sidxs[0]) == Repr_getv(repr, side, sidxs[1]))
+    {
+        return DOUBLE_SCORE;
+    }
+    if (Repr_getv(repr, face, fidxs[1]) == Repr_getv(repr, face, fidxs[2]) &&
+        Repr_getv(repr, side, sidxs[1]) == Repr_getv(repr, side, sidxs[2]))
+    {
+        return DOUBLE_SCORE;
+    }
+
+    return 0;
+}
+
+int Repr_score_bars(Repr const * repr)
+{
+    int score;
+
+    score = 0;
+    score += _score_side_bar(repr, CLR_R, (int[]) {0, 1, 2}, CLR_Y, (int []) {6, 7, 8});
+    score += _score_side_bar(repr, CLR_R, (int []) {6, 7, 8}, CLR_W, (int []) {0, 1, 2});
+    score += _score_side_bar(repr, CLR_O, (int []) {0, 1, 2}, CLR_Y, (int []) {2, 1, 0});
+    score += _score_side_bar(repr, CLR_O, (int []) {6, 7, 8}, CLR_W, (int []) {8, 7, 6});
+    score += _score_central_bar(repr, CLR_Y, (int []) {3, 4, 5});
+    score += _score_central_bar(repr, CLR_W, (int []) {3, 4, 5});
+    score += _score_central_bar(repr, CLR_O, (int []) {3, 4, 5});
+    score += _score_central_bar(repr, CLR_R, (int []) {3, 4, 5});
+
+    score += _score_side_bar(repr, CLR_G, (int []) {0, 3, 6}, CLR_R, (int []) {2, 5, 8});
+    score += _score_side_bar(repr, CLR_G, (int []) {2, 5, 8}, CLR_O, (int []) {0, 3, 6});
+    score += _score_side_bar(repr, CLR_B, (int []) {0, 3, 6}, CLR_O, (int []) {2, 5, 8});
+    score += _score_side_bar(repr, CLR_B, (int []) {2, 5, 8}, CLR_R, (int []) {0, 3, 6});
+    score += _score_central_bar(repr, CLR_R, (int []) {1, 4, 7});
+    score += _score_central_bar(repr, CLR_G, (int []) {1, 4, 7});
+    score += _score_central_bar(repr, CLR_O, (int []) {1, 4, 7});
+    score += _score_central_bar(repr, CLR_B, (int []) {1, 4, 7});
+
+    score += _score_side_bar(repr, CLR_G, (int []) {0, 1, 2}, CLR_Y, (int []) {8, 5, 2});
+    score += _score_side_bar(repr, CLR_G, (int []) {6, 7, 8}, CLR_W, (int []) {2, 5, 8});
+    score += _score_side_bar(repr, CLR_B, (int []) {0, 1, 2}, CLR_Y, (int []) {0, 3, 6});
+    score += _score_side_bar(repr, CLR_B, (int []) {6, 7, 8}, CLR_W, (int []) {6, 3, 0});
+    score += _score_central_bar(repr, CLR_Y, (int []) {1, 4, 7});
+    score += _score_central_bar(repr, CLR_G, (int []) {3, 4, 5});
+    score += _score_central_bar(repr, CLR_W, (int []) {1, 4, 7});
+    score += _score_central_bar(repr, CLR_B, (int []) {3, 4, 5});
+
+    return score;
+}
+
 #include <stdio.h>
 
 static void _dbg_side(Repr const * repr, CLR clr, char const * fmt)

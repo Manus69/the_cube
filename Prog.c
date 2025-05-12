@@ -218,6 +218,8 @@ void Prog_update(Prog * prog)
     else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
     {
         Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_rod);
+        // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_bars);
+
         //
         // SolverM_solve(& prog->solverM, & prog->repr, & prog->cmd_queue, Repr_score_rod);
         _queue_speed_adjust(prog, 4);
