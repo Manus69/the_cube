@@ -12,11 +12,7 @@ typedef struct
 
 int     Repr_score(Repr const * repr);
 int     Repr_score_dist(Repr const * repr, byte const * rhs);
-int     Repr_score_rows(Repr const * repr);
-int     Repr_score_cum(Repr const * repr);
-int     Repr_score_nbghr(Repr const * repr);
 int     Repr_score_rod(Repr const * repr);
-int     Repr_score_cross(Repr const * repr);
 int     Repr_score_bars(Repr const * repr);
 int     Repr_score_distance(Repr const * repr);
 int     Repr_score_misplaced(Repr const * repr);

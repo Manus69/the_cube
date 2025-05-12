@@ -3,6 +3,93 @@
 
 #define CYC_LEN 4
 
+typedef enum
+{
+    DIR_T,
+    DIR_R,
+    DIR_B,
+    DIR_L,
+    DIR_$,
+}   DIR;
+
+static int _neighbour_idx(CLR clr, int idx, CLR side)
+{
+    static const int _neighbours[CLR_$][CLR_$][DIM * DIM] =
+    {
+        [CLR_R] = 
+        {
+            [CLR_R] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_G] = {-1, -1, 0, -1, -1, 3, -1, -1, 6},
+            [CLR_O] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_B] = {2, -1, -1, 5, -1, -1, 8, -1, -1},
+            [CLR_Y] = {6, 7, 8, -1, -1, -1, -1, -1, -1},
+            [CLR_W] = {-1, -1, -1, -1, -1, -1, 0, 1, 2},
+        },
+        [CLR_G] =
+        {
+            [CLR_R] = {2, -1, -1, 5, -1, -1, 8, -1, -1},
+            [CLR_G] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_O] = {-1, -1, 0, -1, -1, 3, -1, -1, 6},
+            [CLR_B] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_Y] = {8, 5, 2, -1, -1, -1, -1, -1, -1},
+            [CLR_W] = {-1, -1, -1, -1, -1, -1, 2, 5, 8},
+        },
+        [CLR_O] =
+        {
+            [CLR_R] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_G] = {2, -1, -1, 5, -1, -1, 8, -1, -1},
+            [CLR_O] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_B] = {-1, -1, 0, -1, -1, 3, -1, -1, 6},
+            [CLR_Y] = {2, 1, 0, -1, -1, -1, -1, -1, -1},
+            [CLR_W] = {-1, -1, -1, -1, -1, -1, 8, 7, 6},
+        },
+        [CLR_B] =
+        {
+            [CLR_R] = {-1, -1, 0, -1, -1, 3, -1, -1, 6},
+            [CLR_G] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_O] = {2, -1, -1, 5, -1, -1, 8, -1, -1},
+            [CLR_B] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_Y] = {0, 3, 6, -1, -1, -1, -1, -1, -1},
+            [CLR_W] = {-1, -1, -1, -1, -1, -1, 6, 3, 0},
+        },
+        [CLR_Y] =
+        {
+            [CLR_R] = {-1, -1, -1, -1, -1, -1, 0, 1, 2},
+            [CLR_G] = {-1, -1, 2, -1, -1, 1, -1, -1, 0},
+            [CLR_O] = {2, 1, 0, -1, -1, -1, -1, -1, -1},
+            [CLR_B] = {0, -1, -1, 1, -1, -1, 2, -1, -1},
+            [CLR_Y] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_W] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+        },
+        [CLR_W] =
+        {
+            [CLR_R] = {6, 7, 8, -1, -1, -1, -1, -1, -1},
+            [CLR_G] = {-1, -1, 6, -1, -1, 7, -1, -1, 8},
+            [CLR_O] = {-1, -1, -1, -1, -1, -1, 8, 7, 6},
+            [CLR_B] = {8, -1, -1, 7, -1, -1, 6, -1, -1},
+            [CLR_Y] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_W] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+        },
+    };
+
+    return _neighbours[clr][side][idx];
+}
+
+static CLR _neighbour_clr(CLR clr, DIR dir)
+{
+    static const CLR _clr[CLR_$][DIR_$] =
+    {
+        [CLR_R] = {CLR_Y, CLR_G, CLR_W, CLR_B},
+        [CLR_G] = {CLR_Y, CLR_O, CLR_W, CLR_R},
+        [CLR_O] = {CLR_Y, CLR_B, CLR_W, CLR_G},
+        [CLR_B] = {CLR_Y, CLR_R, CLR_W, CLR_O},
+        [CLR_Y] = {CLR_O, CLR_G, CLR_R, CLR_B},
+        [CLR_W] = {CLR_R, CLR_G, CLR_O, CLR_B},
+    };
+
+    return _clr[clr][dir];
+}
+
 void Repr_init(Repr * repr, char const * cstr)
 {
     memcpy(repr->buff, cstr, REPR_LEN);
@@ -369,8 +456,8 @@ int Repr_score_test(Repr const * repr)
     return (Repr_score_rod(repr) + 1) * (Repr_score(repr) + 1);
 }
 
-#define TRIPLE_SCORE    -4
-#define DOUBLE_SCORE    -2
+#define TRIPLE_SCORE    -2
+#define DOUBLE_SCORE    -1
 #define NO_SCORE        0
 
 static int _score_central_bar(Repr const * repr, CLR clr, int idxs[3])
@@ -519,6 +606,18 @@ int Repr_score_misplaced(Repr const * repr)
     score += _score_corner(repr, (CLR []) {CLR_O, CLR_W, CLR_G}, (int []) {6, 8, 8});
 
     return score;
+}
+
+
+
+static int _score_cont_reg_side(Repr const * repr, CLR clr)
+{
+    
+}
+
+int Repr_score_cont_reg(Repr const * repr)
+{
+
 }
 
 #include <stdio.h>

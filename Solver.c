@@ -2,7 +2,7 @@
 #include <string.h>
 
 #define LIMIT (1 << 20)
-#define DEPTH 50
+#define DEPTH 200
 
 typedef struct
 {
@@ -96,6 +96,7 @@ static int _add_repr(Solver * solver, Repr const * repr, int parent, int depth, 
     {
         .id = Vec_len(& solver->reprs),
         .score = f(repr),
+        // .score = f(repr) * (depth + 1),
     };
 
     return _push(solver, repr, cmd, parent, depth, ids);
@@ -118,14 +119,14 @@ static int _solve(Solver * solver, Deq * cmd_queue, int (* f)(Repr const *))
         depth = $drf(int) Vec_get(& solver->depth, ids.id);
 
         
+        if (depth > DEPTH) continue;
         if (Repr_solved(current))
         {
             //
-            printf("%d\n", ids.id);
+            printf("sln: id %d, depth: %d\n", ids.id, depth);
             return _backtrack(solver, ids.id, cmd_queue);
         }
         
-        if (depth > DEPTH) continue;
 
         for (CLR clr = 0; clr < CLR_$; clr ++)
         {

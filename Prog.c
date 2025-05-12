@@ -206,10 +206,10 @@ void Prog_update(Prog * prog)
 
         //
         // printf("CMD :      (%d %d)\n", cmd.clr, cmd.dir);
-        // printf("cum score:  %d\n", Repr_score_cum(& prog->repr));
-        // printf("rod score :   %d\n", Repr_score_rod(& prog->repr));
+        printf("rod score :   %d\n", Repr_score_rod(& prog->repr));
+        printf("bar score : %d\n", Repr_score_bars(& prog->repr));
+        $nl;
         // printf("test score:   %d\n", Repr_score_test(& prog->repr));
-        // printf("bar score : %d\n", Repr_score_bars(& prog->repr));
         // printf("dist score : %d\n", Repr_score_distance(& prog->repr));
         // printf("mis score : %d\n", Repr_score_misplaced(& prog->repr));
 
@@ -222,8 +222,8 @@ void Prog_update(Prog * prog)
     }
     else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
     {
-        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_rod);
-        // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_bars);
+        // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_rod);
+        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_bars);
         // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_misplaced);
 
         //

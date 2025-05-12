@@ -8,6 +8,7 @@
 //investigate layers
 //investigate the mysterious segfault
 //scaling score slice
+//dont add inv parent move
 
 //lib ringbuffer
 
