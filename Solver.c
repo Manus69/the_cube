@@ -1,8 +1,8 @@
 #include "Solver.h"
 #include <string.h>
 
-#define LIMIT (1 << 18)
-#define DEPTH 200
+#define LIMIT (1 << 20)
+#define DEPTH 50
 
 typedef struct
 {

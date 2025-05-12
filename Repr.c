@@ -369,8 +369,9 @@ int Repr_score_test(Repr const * repr)
     return (Repr_score_rod(repr) + 1) * (Repr_score(repr) + 1);
 }
 
-#define TRIPLE_SCORE 3
-#define DOUBLE_SCORE 2
+#define TRIPLE_SCORE    -4
+#define DOUBLE_SCORE    -2
+#define NO_SCORE        0
 
 static int _score_central_bar(Repr const * repr, CLR clr, int idxs[3])
 {
@@ -385,7 +386,7 @@ static int _score_central_bar(Repr const * repr, CLR clr, int idxs[3])
         return DOUBLE_SCORE;
     }
 
-    return 0;
+    return NO_SCORE;
 }
 
 static int _score_side_bar(Repr const * repr, CLR face, int fidxs[3], CLR side, int sidxs[3])
@@ -408,7 +409,7 @@ static int _score_side_bar(Repr const * repr, CLR face, int fidxs[3], CLR side, 
         return DOUBLE_SCORE;
     }
 
-    return 0;
+    return NO_SCORE;
 }
 
 int Repr_score_bars(Repr const * repr)
@@ -442,6 +443,80 @@ int Repr_score_bars(Repr const * repr)
     score += _score_central_bar(repr, CLR_G, (int []) {3, 4, 5});
     score += _score_central_bar(repr, CLR_W, (int []) {1, 4, 7});
     score += _score_central_bar(repr, CLR_B, (int []) {3, 4, 5});
+
+    return score;
+}
+
+static int _CLR_distance(CLR lhs, CLR rhs)
+{
+    static const int _dist[CLR_$][CLR_$] =
+    {
+        [CLR_R] = {0, 1, 2, 1, 1, 1},
+        [CLR_G] = {1, 0, 1, 2, 1, 1},
+        [CLR_O] = {2, 1, 0, 1, 1, 1},
+        [CLR_B] = {1, 2, 1, 0, 1, 1},
+        [CLR_Y] = {1, 1, 1, 1, 0, 2},
+        [CLR_W] = {1, 1, 1, 1, 2, 0},
+    };
+
+    return _dist[lhs][rhs];
+}
+
+int Repr_score_distance(Repr const * repr)
+{
+    int score;
+
+    score = 0;
+    for (CLR clr = CLR_R; clr < CLR_$; clr ++)
+    {
+        for (int k = 0; k < DIM * DIM; k ++)
+        {
+            score += _CLR_distance(clr, CLR_fromc(Repr_getv(repr, clr, k)));
+        }
+    }
+
+    return score;
+}
+
+static int _score_edge(Repr const * repr, CLR sides[2], int idxs[2])
+{
+    return ! (CLR_fromc(Repr_getv(repr, sides[0], idxs[0])) == sides[0] &&
+            CLR_fromc(Repr_getv(repr, sides[1], idxs[1])) == sides[1]);
+}
+
+static int _score_corner(Repr const * repr, CLR sides[3], int idxs[3])
+{
+    return ! (CLR_fromc(Repr_getv(repr, sides[0], idxs[0])) == sides[0] &&
+            CLR_fromc(Repr_getv(repr, sides[1], idxs[1])) == sides[1] &&
+            CLR_fromc(Repr_getv(repr, sides[2], idxs[2])) == sides[2]);
+}
+
+int Repr_score_misplaced(Repr const * repr)
+{
+    int score;
+
+    score = 0;
+    score += _score_edge(repr, (CLR []) {CLR_R, CLR_Y}, (int []) {1, 7});
+    score += _score_edge(repr, (CLR []) {CLR_R, CLR_G}, (int []) {5, 3});
+    score += _score_edge(repr, (CLR []) {CLR_R, CLR_W}, (int []) {7, 1});
+    score += _score_edge(repr, (CLR []) {CLR_R, CLR_B}, (int []) {3, 5});
+    score += _score_edge(repr, (CLR []) {CLR_G, CLR_Y}, (int []) {1, 5});
+    score += _score_edge(repr, (CLR []) {CLR_G, CLR_O}, (int []) {5, 3});
+    score += _score_edge(repr, (CLR []) {CLR_G, CLR_W}, (int []) {7, 5});
+    score += _score_edge(repr, (CLR []) {CLR_O, CLR_Y}, (int []) {1, 1});
+    score += _score_edge(repr, (CLR []) {CLR_O, CLR_B}, (int []) {5, 3});
+    score += _score_edge(repr, (CLR []) {CLR_O, CLR_W}, (int []) {7, 7});
+    score += _score_edge(repr, (CLR []) {CLR_B, CLR_Y}, (int []) {1, 3});
+    score += _score_edge(repr, (CLR []) {CLR_B, CLR_W}, (int []) {7, 3});
+
+    score += _score_corner(repr, (CLR []) {CLR_R, CLR_Y, CLR_B}, (int []) {0, 6, 2});
+    score += _score_corner(repr, (CLR []) {CLR_R, CLR_Y, CLR_G}, (int []) {2, 8, 0});
+    score += _score_corner(repr, (CLR []) {CLR_R, CLR_W, CLR_G}, (int []) {8, 2, 6});
+    score += _score_corner(repr, (CLR []) {CLR_R, CLR_W, CLR_B}, (int []) {6, 0, 8});
+    score += _score_corner(repr, (CLR []) {CLR_O, CLR_Y, CLR_G}, (int []) {0, 2, 2});
+    score += _score_corner(repr, (CLR []) {CLR_O, CLR_Y, CLR_B}, (int []) {2, 0, 0});
+    score += _score_corner(repr, (CLR []) {CLR_O, CLR_W, CLR_B}, (int []) {8, 6, 6});
+    score += _score_corner(repr, (CLR []) {CLR_O, CLR_W, CLR_G}, (int []) {6, 8, 8});
 
     return score;
 }
