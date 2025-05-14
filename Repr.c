@@ -725,7 +725,7 @@ int Repr_score_cont_reg(Repr const * repr)
 {
     static const int _bar2_score = -1;
     static const int _bar3_score = -1;
-    static const int _blk4_score = -1;
+    static const int _blk4_score = 0;
 
     int     score;
     Count   cnt;

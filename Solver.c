@@ -2,7 +2,7 @@
 #include <string.h>
 
 #define LIMIT (1 << 20)
-#define DEPTH 900
+#define DEPTH 1000
 
 typedef struct
 {

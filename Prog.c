@@ -12,23 +12,23 @@
 
 typedef enum
 {
-    CNTRL_SPACE = CLR_$,
-    CNTRL_S,
-    CNTRL_TAB,
-    CNTR_T,
+    BTN_SPACE = CLR_$,
+    BTN_S,
+    BTN_TAB,
+    BTN_T,
     // hold down btns
 
-    CNTRL_SHIFT, 
-    CNTRL_LEFT,
-    CNTRL_RIGHT,
-    CNTRL_UP,
-    CNTRL_DOWN,
-    CNTRL_$,
-}   CNTRL;
+    BTN_SHIFT, 
+    BTN_LEFT,
+    BTN_RIGHT,
+    BTN_UP,
+    BTN_DOWN,
+    BTN_$,
+}   BTN;
 
 typedef struct
 {
-    bool    inputs[CNTRL_$];
+    bool    inputs[BTN_$];
 }   Input;
 
 struct Prog
@@ -131,7 +131,10 @@ static void _queue_speed_adjust(Prog * prog, int val)
 static void _test(Prog * prog)
 {
     // char const * cmd_cstr = "GYgYGyyg"; //sune
-    char const * cmd_cstr = "GyGYGYGygygg"; //pll ?
+    // char const * cmd_cstr = "GyGYGYGygygg"; //pll ?
+    //r U R' U' M2' U R U' R' U' M'
+    char const * cmd_cstr = "BRgrbbggOGogogB"; // x oll
+
 
     Cmd cmd;
 
@@ -140,6 +143,7 @@ static void _test(Prog * prog)
         cmd = Cmd_fromc(* ptr);
         Deq_pushr(& prog->cmd_queue, & cmd);
     }
+    // printf("deq len : %d\n", Deq_len(& prog->cmd_queue));
     _queue_speed_adjust(prog, 5);
 
 }
@@ -149,46 +153,44 @@ static void _test(Prog * prog)
 
 void Prog_input(Prog * prog)
 {
-    static const KeyboardKey _key_map[CNTRL_$] =
+    static const KeyboardKey _key_map[BTN_$] =
     {
-        [CLR_R] = KEY_R,    [CNTRL_UP] = KEY_UP,
-        [CLR_G] = KEY_G,    [CNTRL_DOWN] = KEY_DOWN,
-        [CLR_O] = KEY_O,    [CNTRL_LEFT] = KEY_LEFT,
-        [CLR_B] = KEY_B,    [CNTRL_RIGHT] = KEY_RIGHT,
-        [CLR_Y] = KEY_Y,    [CNTRL_SHIFT] = KEY_LEFT_SHIFT,
-        [CLR_W] = KEY_W,    [CNTRL_SPACE] = KEY_SPACE,
-                            [CNTRL_TAB] = KEY_TAB,
-                            [CNTRL_S] = KEY_S,
-                            [CNTR_T] = KEY_T,
+        [CLR_R] = KEY_R,    [BTN_UP] = KEY_UP,
+        [CLR_G] = KEY_G,    [BTN_DOWN] = KEY_DOWN,
+        [CLR_O] = KEY_O,    [BTN_LEFT] = KEY_LEFT,
+        [CLR_B] = KEY_B,    [BTN_RIGHT] = KEY_RIGHT,
+        [CLR_Y] = KEY_Y,    [BTN_SHIFT] = KEY_LEFT_SHIFT,
+        [CLR_W] = KEY_W,    [BTN_SPACE] = KEY_SPACE,
+                            [BTN_TAB] = KEY_TAB,
+                            [BTN_S] = KEY_S,
+                            [BTN_T] = KEY_T,
     };
 
     Cmd cmd = {};
 
-    for (int k = 0; k <= CNTRL_TAB; k ++)
+    for (int k = 0; k <= BTN_TAB; k ++)
     {
         prog->input.inputs[k] = IsKeyPressed(_key_map[k]);
     }
 
-    for (int k = CNTRL_TAB; k < CNTRL_$; k ++)
+    for (int k = BTN_TAB; k < BTN_$; k ++)
     {
         prog->input.inputs[k] = IsKeyDown(_key_map[k]);
     }
 
     if (WindowShouldClose())                { prog->runs = false; return; }
-    if (prog->input.inputs[CNTRL_LEFT])     _Cam_roty(& prog->cam, CAM_W);
-    if (prog->input.inputs[CNTRL_RIGHT])    _Cam_roty(& prog->cam, -CAM_W);
+    if (prog->input.inputs[BTN_LEFT])       _Cam_roty(& prog->cam, CAM_W);
+    if (prog->input.inputs[BTN_RIGHT])      _Cam_roty(& prog->cam, -CAM_W);
     
     if (Deq_len(& prog->cmd_queue) > 1)     { return ; }
     for (int k = CLR_R; k < CLR_$; k ++)
     {
-        if      (prog->input.inputs[CNTRL_SHIFT] && prog->input.inputs[k]) cmd = (Cmd) {k, -SPD0};
+        if      (prog->input.inputs[BTN_SHIFT] && prog->input.inputs[k]) cmd = (Cmd) {k, -SPD0};
         else if (prog->input.inputs[k]) cmd = (Cmd) {k, SPD0};
     }
     
     if (cmd.dir) { Deq_pushr(& prog->cmd_queue, & cmd); return; }
-    if (prog->input.inputs[CNTRL_SPACE])    _get_shuffle(prog, 20, SPD1);
-    if (prog->input.inputs[CNTR_T])         _test(prog);
-
+    if (prog->input.inputs[BTN_SPACE])      return _get_shuffle(prog, 20, SPD1);
 }
 
 void Prog_update(Prog * prog)
@@ -215,22 +217,24 @@ void Prog_update(Prog * prog)
 
 
     }
-    else if (prog->input.inputs[CNTRL_TAB] && ! Cube_in_animation(& prog->cube))
+    else if (prog->input.inputs[BTN_TAB] && ! Cube_in_animation(& prog->cube))
     {
         Cube_reset_clr(& prog->cube);
         Repr_init(& prog->repr, CUBE_CLR_STR);
     }
-    else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
+    else if (prog->input.inputs[BTN_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
     {
         // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_rod);
-        // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_bars);
-        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_cont_reg);
+        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_bars);
+        // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_cont_reg);
 
-        //
-        // SolverM_solve(& prog->solverM, & prog->repr, & prog->cmd_queue, Repr_score_rod);
         _queue_speed_adjust(prog, 4);
 
-        printf("%d\n", Deq_len(& prog->cmd_queue));
+        printf("sln len : %d\n", Deq_len(& prog->cmd_queue));
+    }
+    else if (prog->input.inputs[BTN_T] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
+    {
+        _test(prog);
     }
 
     Cube_update(& prog->cube);
@@ -244,7 +248,6 @@ void Prog_draw(Prog * prog)
     DrawRectangleGradientV(0, 0, WW, WH, DARKGRAY, DARKPURPLE);
 
     BeginMode3D(prog->cam);
-    // DrawGrid(100, 1);
 
     Cube_draw(& prog->cube);
     EndMode3D();
