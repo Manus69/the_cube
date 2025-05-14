@@ -18,7 +18,7 @@ static int _neighbour_idx(CLR clr, int idx, CLR side)
     {
         [CLR_R] = 
         {
-            [CLR_R] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_R] = {0, 1, 2, 3, 4, 5, 6, 7, 8},
             [CLR_G] = {-1, -1, 0, -1, -1, 3, -1, -1, 6},
             [CLR_O] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
             [CLR_B] = {2, -1, -1, 5, -1, -1, 8, -1, -1},
@@ -28,7 +28,7 @@ static int _neighbour_idx(CLR clr, int idx, CLR side)
         [CLR_G] =
         {
             [CLR_R] = {2, -1, -1, 5, -1, -1, 8, -1, -1},
-            [CLR_G] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_G] = {0, 1, 2, 3, 4, 5, 6, 7, 8},
             [CLR_O] = {-1, -1, 0, -1, -1, 3, -1, -1, 6},
             [CLR_B] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
             [CLR_Y] = {8, 5, 2, -1, -1, -1, -1, -1, -1},
@@ -38,7 +38,7 @@ static int _neighbour_idx(CLR clr, int idx, CLR side)
         {
             [CLR_R] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
             [CLR_G] = {2, -1, -1, 5, -1, -1, 8, -1, -1},
-            [CLR_O] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_O] = {0, 1, 2, 3, 4, 5, 6, 7, 8},
             [CLR_B] = {-1, -1, 0, -1, -1, 3, -1, -1, 6},
             [CLR_Y] = {2, 1, 0, -1, -1, -1, -1, -1, -1},
             [CLR_W] = {-1, -1, -1, -1, -1, -1, 8, 7, 6},
@@ -48,7 +48,7 @@ static int _neighbour_idx(CLR clr, int idx, CLR side)
             [CLR_R] = {-1, -1, 0, -1, -1, 3, -1, -1, 6},
             [CLR_G] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
             [CLR_O] = {2, -1, -1, 5, -1, -1, 8, -1, -1},
-            [CLR_B] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_B] = {0, 1, 2, 3, 4, 5, 6, 7, 8},
             [CLR_Y] = {0, 3, 6, -1, -1, -1, -1, -1, -1},
             [CLR_W] = {-1, -1, -1, -1, -1, -1, 6, 3, 0},
         },
@@ -58,7 +58,7 @@ static int _neighbour_idx(CLR clr, int idx, CLR side)
             [CLR_G] = {-1, -1, 2, -1, -1, 1, -1, -1, 0},
             [CLR_O] = {2, 1, 0, -1, -1, -1, -1, -1, -1},
             [CLR_B] = {0, -1, -1, 1, -1, -1, 2, -1, -1},
-            [CLR_Y] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_Y] = {0, 1, 2, 3, 4, 5, 6, 7, 8},
             [CLR_W] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
         },
         [CLR_W] =
@@ -68,7 +68,7 @@ static int _neighbour_idx(CLR clr, int idx, CLR side)
             [CLR_O] = {-1, -1, -1, -1, -1, -1, 8, 7, 6},
             [CLR_B] = {8, -1, -1, 7, -1, -1, 6, -1, -1},
             [CLR_Y] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
-            [CLR_W] = {-1, -1, -1, -1, -1, -1, -1, -1, -1},
+            [CLR_W] = {0, 1, 2, 3, 4, 5, 6, 7, 8},
         },
     };
 
@@ -608,16 +608,138 @@ int Repr_score_misplaced(Repr const * repr)
     return score;
 }
 
-
-
-static int _score_cont_reg_side(Repr const * repr, CLR clr)
+static bool _is_2bar(Repr const * repr, CLR clr, int idx0, int idx1)
 {
+    return Repr_getv(repr, clr, idx0) == Repr_getv(repr, clr, idx1);
+}
+
+static bool _is_3bar(Repr const * repr, CLR clr, int idx0, int idx1, int idx2)
+{
+    return _is_2bar(repr, clr, idx0, idx1) && _is_2bar(repr, clr, idx1, idx2);
+}
+
+typedef struct
+{
+    int bar2;
+    int bar3;
+    int blk4;
+}   Count;
+
+static inline void Count_inc(Count * cnt, Count val)
+{
+    cnt->bar2 += val.bar2;
+    cnt->bar3 += val.bar3;
+    cnt->blk4 += val.blk4;
+}
+
+static Count _count_bars(Repr const * repr, CLR clr, int idxs[3], CLR adj)
+{
+    int adj_idxs[3] =
+    {
+        _neighbour_idx(clr, idxs[0], adj),
+        _neighbour_idx(clr, idxs[1], adj),
+        _neighbour_idx(clr, idxs[2], adj),
+    };
+
+    Count cnt = {};
+
+    if (_is_2bar(repr, clr, idxs[0], idxs[1]) && _is_2bar(repr, adj, adj_idxs[0], adj_idxs[1]))
+    {
+        cnt.bar2 ++;
+    }
+    if (_is_2bar(repr, clr, idxs[1], idxs[2]) && _is_2bar(repr, adj, adj_idxs[1], adj_idxs[2]))
+    {
+        cnt.bar2 ++;
+    }
+    if (cnt.bar2 == 2)
+    {
+        cnt.bar3 = 1;
+    }
+
+    return cnt;
+}
+
+static bool _check_blk(Repr const * repr, CLR clr, int idxs0[2], CLR adj0, int idxs1[2], CLR adj1)
+{
+    return _is_2bar(repr, clr, idxs0[0], idxs0[1]) && _is_2bar(repr, clr, idxs1[0], idxs1[1]) && _is_2bar(repr, clr, idxs0[0], 4) &&
+            _is_2bar(repr, adj0, _neighbour_idx(clr, idxs0[0], adj0), _neighbour_idx(clr, idxs0[1], adj0)) &&
+            _is_2bar(repr, adj1, _neighbour_idx(clr, idxs1[0], adj1), _neighbour_idx(clr, idxs1[1], adj1));
+
+}
+
+static Count _count_blks(Repr const * repr, CLR clr)
+{
+    CLR clrs[DIR_$] = 
+    {
+        _neighbour_clr(clr, DIR_T),
+        _neighbour_clr(clr, DIR_R),
+        _neighbour_clr(clr, DIR_B),
+        _neighbour_clr(clr, DIR_L),
+    };
     
+    Count cnt = {};
+
+    cnt.blk4 += _check_blk(repr, clr, (int []) {0, 1}, clrs[DIR_T], (int []) {0, 3}, clrs[DIR_L]);
+    cnt.blk4 += _check_blk(repr, clr, (int []) {2, 1}, clrs[DIR_T], (int []) {2, 5}, clrs[DIR_R]);
+    cnt.blk4 += _check_blk(repr, clr, (int []) {8, 5}, clrs[DIR_R], (int []) {8, 7}, clrs[DIR_B]);
+    cnt.blk4 += _check_blk(repr, clr, (int []) {6, 7}, clrs[DIR_B], (int []) {6, 3}, clrs[DIR_L]);
+
+    return cnt;
+}
+
+static Count _count(Repr const * repr, CLR clr)
+{
+    Count   cnt = {};
+    Count   current;
+    CLR     adj;
+
+    adj = _neighbour_clr(clr, DIR_T);
+    current = _count_bars(repr, clr, (int []) {0, 1, 2}, adj);
+    Count_inc(& cnt, current);
+
+    adj = _neighbour_clr(clr, DIR_R);
+    current = _count_bars(repr, clr, (int []) {2, 5, 8}, adj);
+    Count_inc(& cnt, current);
+
+    adj = _neighbour_clr(clr, DIR_B);
+    current = _count_bars(repr, clr, (int []) {6, 7, 8}, adj);
+    Count_inc(& cnt, current);
+
+    adj = _neighbour_clr(clr, DIR_L);
+    current = _count_bars(repr, clr, (int []) {0, 3, 6}, adj);
+    Count_inc(& cnt, current);
+
+    current = _count_bars(repr, clr, (int []) {1, 4, 7}, clr);
+    Count_inc(& cnt, current);
+
+    current = _count_bars(repr, clr, (int []) {3, 4, 5}, clr);
+    Count_inc(& cnt, current);
+
+    current = _count_blks(repr, clr);
+    Count_inc(& cnt, current);
+
+    return cnt;
 }
 
 int Repr_score_cont_reg(Repr const * repr)
 {
+    static const int _bar2_score = -1;
+    static const int _bar3_score = -1;
+    static const int _blk4_score = -1;
 
+    int     score;
+    Count   cnt;
+
+    score = 0;
+    for (CLR clr = CLR_R; clr < CLR_$; clr ++)
+    {
+        cnt = _count(repr, clr);
+        score += cnt.bar2 * _bar2_score;
+        score += cnt.bar3 * _bar3_score;
+        score += cnt.blk4 * _blk4_score;
+    }
+
+    return score;
 }
 
 #include <stdio.h>

@@ -58,4 +58,25 @@ typedef struct
     char dir;
 }   Cmd;
 
+static inline Cmd Cmd_fromc(char x)
+{
+    static const Cmd _cmds[] =
+    {
+        ['r'] = (Cmd) {CLR_R, 1},
+        ['R'] = (Cmd) {CLR_R, -1},
+        ['g'] = (Cmd) {CLR_G, 1},
+        ['G'] = (Cmd) {CLR_G, -1},
+        ['o'] = (Cmd) {CLR_O, 1},
+        ['O'] = (Cmd) {CLR_O, -1},
+        ['b'] = (Cmd) {CLR_B, 1},
+        ['B'] = (Cmd) {CLR_B, -1},
+        ['y'] = (Cmd) {CLR_Y, 1},
+        ['Y'] = (Cmd) {CLR_Y, -1},
+        ['w'] = (Cmd) {CLR_W, 1},
+        ['W'] = (Cmd) {CLR_W, -1},
+    };
+
+    return _cmds[(int) x];
+}
+
 #endif

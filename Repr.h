@@ -17,6 +17,7 @@ int     Repr_score_bars(Repr const * repr);
 int     Repr_score_distance(Repr const * repr);
 int     Repr_score_misplaced(Repr const * repr);
 int     Repr_score_test(Repr const * repr);
+int     Repr_score_cont_reg(Repr const * repr);
 void    Repr_init(Repr * repr, char const * cstr);
 byte *  Repr_get(Repr * repr, CLR clr, int idx);
 byte *  Repr_get_rc(Repr * repr, CLR clr, int row, int col);

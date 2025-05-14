@@ -14,8 +14,8 @@ typedef enum
 {
     CNTRL_SPACE = CLR_$,
     CNTRL_S,
-    CNTRL_TAB, 
-
+    CNTRL_TAB,
+    CNTR_T,
     // hold down btns
 
     CNTRL_SHIFT, 
@@ -39,9 +39,6 @@ struct Prog
     Input   input;
     Deq     cmd_queue;
     Solver  solver;
-    //
-    // SolverM solverM;
-    //
     bool    runs;
 };
 
@@ -71,10 +68,6 @@ Prog * Prog_new(void)
     if (! (prog = calloc(1, sizeof(* prog))))       return NULL;
     if (! Deq_new(& prog->cmd_queue, sizeof(Cmd)))  return NULL;
     if (! Solver_new(& prog->solver))               return NULL;
-
-    //
-    // if (! SolverM_new(& prog->solverM))             return NULL;
-    //
     
     Repr_init(& prog->repr, CUBE_CLR_STR);
     _graphics_init(prog);
@@ -90,9 +83,6 @@ void Prog_del(Prog * prog)
 {
     Deq_del(& prog->cmd_queue);
     Solver_del(& prog->solver);
-    //
-    // SolverM_del(& prog->solverM);
-    //
     CloseWindow();
     free(prog);
 }
@@ -105,16 +95,6 @@ bool Prog_runs(Prog const * prog)
 static void _Cam_roty(Camera3D * cam, float x)
 {
     cam->position = Vector3Transform(cam->position, MatrixRotateY(x * DEG2RAD));
-}
-
-static void _test(Prog * prog)
-{
-    Cmd seq[] = {{0, -1}, {2, 1}, {4, -1}, {5, 1}, {0, 1}, {2, -1}};
-
-    for (int k = 0; (unsigned) k < sizeof(seq) / sizeof(* seq); k ++)
-    {
-        Deq_pushr(& prog->cmd_queue, seq + k);
-    }
 }
 
 static void _get_shuffle(Prog * prog, int len, char speed)
@@ -148,6 +128,22 @@ static void _queue_speed_adjust(Prog * prog, int val)
     }
 }
 
+static void _test(Prog * prog)
+{
+    // char const * cmd_cstr = "GYgYGyyg"; //sune
+    char const * cmd_cstr = "GyGYGYGygygg"; //pll ?
+
+    Cmd cmd;
+
+    for (char const * ptr = cmd_cstr; * ptr; ptr ++)
+    {
+        cmd = Cmd_fromc(* ptr);
+        Deq_pushr(& prog->cmd_queue, & cmd);
+    }
+    _queue_speed_adjust(prog, 5);
+
+}
+
 #define CAM_W   3
 #define CUBE_W  360
 
@@ -163,6 +159,7 @@ void Prog_input(Prog * prog)
         [CLR_W] = KEY_W,    [CNTRL_SPACE] = KEY_SPACE,
                             [CNTRL_TAB] = KEY_TAB,
                             [CNTRL_S] = KEY_S,
+                            [CNTR_T] = KEY_T,
     };
 
     Cmd cmd = {};
@@ -190,6 +187,7 @@ void Prog_input(Prog * prog)
     
     if (cmd.dir) { Deq_pushr(& prog->cmd_queue, & cmd); return; }
     if (prog->input.inputs[CNTRL_SPACE])    _get_shuffle(prog, 20, SPD1);
+    if (prog->input.inputs[CNTR_T])         _test(prog);
 
 }
 
@@ -206,9 +204,11 @@ void Prog_update(Prog * prog)
 
         //
         // printf("CMD :      (%d %d)\n", cmd.clr, cmd.dir);
-        printf("rod score :   %d\n", Repr_score_rod(& prog->repr));
-        printf("bar score : %d\n", Repr_score_bars(& prog->repr));
-        $nl;
+        // printf("rod score :   %d\n", Repr_score_rod(& prog->repr));
+        // printf("bar score : %d\n", Repr_score_bars(& prog->repr));
+        // printf("reg score : %d\n", Repr_score_cont_reg(& prog->repr));
+        // $nl;
+
         // printf("test score:   %d\n", Repr_score_test(& prog->repr));
         // printf("dist score : %d\n", Repr_score_distance(& prog->repr));
         // printf("mis score : %d\n", Repr_score_misplaced(& prog->repr));
@@ -223,8 +223,8 @@ void Prog_update(Prog * prog)
     else if (prog->input.inputs[CNTRL_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
     {
         // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_rod);
-        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_bars);
-        // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_misplaced);
+        // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_bars);
+        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_cont_reg);
 
         //
         // SolverM_solve(& prog->solverM, & prog->repr, & prog->cmd_queue, Repr_score_rod);
