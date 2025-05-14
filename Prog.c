@@ -16,6 +16,7 @@ typedef enum
     BTN_S,
     BTN_TAB,
     BTN_T,
+    BTN_SHFT,
     // hold down btns
 
     BTN_SHIFT, 
@@ -31,13 +32,74 @@ typedef struct
     bool    inputs[BTN_$];
 }   Input;
 
+typedef struct
+{
+    Deq     deq;
+    byte    vel;
+    bool    lock;
+}   Cmdq;
+
+static bool Cmdq_init(Cmdq * cmdq)
+{
+    cmdq->lock = false;
+    cmdq->vel = SPD0;
+
+    return Deq_new(& cmdq->deq, sizeof(Cmd));
+}
+
+static void Cmdq_lock(Cmdq * cmdq)
+{
+    cmdq->lock = true;
+}
+
+static void Cmdq_unlock(Cmdq * cmdq)
+{
+    cmdq->lock = false;
+}
+
+static void Cmdq_lock_toggle(Cmdq * cmdq)
+{
+    cmdq->lock = ! cmdq->lock;
+}
+
+static bool Cmdq_empty(Cmdq const * cmdq)
+{
+    return Deq_empty(& cmdq->deq);
+}
+
+static bool Cmdq_poppable(Cmdq const * cmdq)
+{
+    return ! cmdq->lock && ! Cmdq_empty(cmdq);
+}
+
+static void Cmdq_vel_inc(Cmdq * cmdq, int dv)
+{
+    int v;
+
+    v = cmdq->vel + dv;
+    if (v < 1) return ;
+
+    cmdq->vel = v;
+}
+
+static bool Cmdq_push(Cmdq * cmdq, Cmd const * cmd)
+{
+    return Deq_pushr(& cmdq->deq, cmd);
+}
+
+static void Cmdq_reset(Cmdq * cmdq)
+{
+    Deq_pop_all(& cmdq->deq);
+    Cmdq_unlock(cmdq);
+}
+
 struct Prog
 {
     Repr    repr;
     Cube    cube;
     Camera  cam;
     Input   input;
-    Deq     cmd_queue;
+    Cmdq    cmdq;
     Solver  solver;
     bool    runs;
 };
@@ -66,7 +128,7 @@ Prog * Prog_new(void)
     Prog * prog;
 
     if (! (prog = calloc(1, sizeof(* prog))))       return NULL;
-    if (! Deq_new(& prog->cmd_queue, sizeof(Cmd)))  return NULL;
+    if (! Cmdq_init(& prog->cmdq))                  return NULL;
     if (! Solver_new(& prog->solver))               return NULL;
     
     Repr_init(& prog->repr, CUBE_CLR_STR);
@@ -81,7 +143,7 @@ Prog * Prog_new(void)
 
 void Prog_del(Prog * prog)
 {
-    Deq_del(& prog->cmd_queue);
+    Deq_del(& prog->cmdq.deq);
     Solver_del(& prog->solver);
     CloseWindow();
     free(prog);
@@ -97,7 +159,7 @@ static void _Cam_roty(Camera3D * cam, float x)
     cam->position = Vector3Transform(cam->position, MatrixRotateY(x * DEG2RAD));
 }
 
-static void _get_shuffle(Prog * prog, int len, char speed)
+static void _get_shuffle(Prog * prog, int len)
 {
     Cmd cmd;
     Cmd prev = {};
@@ -108,23 +170,12 @@ static void _get_shuffle(Prog * prog, int len, char speed)
     for (int k = 0; k < len; k ++)
     {
         cmd.clr = sfl_rng(& x) % CLR_$;
-        cmd.dir = (char []){speed, -speed}[sfl_rng(& x) % 2];
+        cmd.dir = (char []){1, -1}[sfl_rng(& x) % 2];
 
         if (prev.clr == cmd.clr && prev.dir == -cmd.dir) cmd.dir *= -1;
 
-        Deq_pushr(& prog->cmd_queue, & cmd);
+        Cmdq_push(& prog->cmdq, & cmd);
         prev = cmd;
-    }
-}
-
-static void _queue_speed_adjust(Prog * prog, int val)
-{
-    Cmd * cmd;
-
-    for (int k = 0; k < Deq_len(& prog->cmd_queue); k ++)
-    {
-        cmd = Deq_get(& prog->cmd_queue, k);
-        cmd->dir *= val;
     }
 }
 
@@ -141,11 +192,10 @@ static void _test(Prog * prog)
     for (char const * ptr = cmd_cstr; * ptr; ptr ++)
     {
         cmd = Cmd_fromc(* ptr);
-        Deq_pushr(& prog->cmd_queue, & cmd);
+        Cmdq_push(& prog->cmdq, & cmd);
     }
-    // printf("deq len : %d\n", Deq_len(& prog->cmd_queue));
-    _queue_speed_adjust(prog, 5);
-
+    
+    prog->cmdq.vel = SPD1;
 }
 
 #define CAM_W   3
@@ -181,28 +231,45 @@ void Prog_input(Prog * prog)
     if (WindowShouldClose())                { prog->runs = false; return; }
     if (prog->input.inputs[BTN_LEFT])       _Cam_roty(& prog->cam, CAM_W);
     if (prog->input.inputs[BTN_RIGHT])      _Cam_roty(& prog->cam, -CAM_W);
-    
-    if (Deq_len(& prog->cmd_queue) > 1)     { return ; }
-    for (int k = CLR_R; k < CLR_$; k ++)
+    if (prog->input.inputs[BTN_SPACE])
     {
-        if      (prog->input.inputs[BTN_SHIFT] && prog->input.inputs[k]) cmd = (Cmd) {k, -SPD0};
-        else if (prog->input.inputs[k]) cmd = (Cmd) {k, SPD0};
+        Cmdq_lock_toggle(& prog->cmdq);
     }
     
-    if (cmd.dir) { Deq_pushr(& prog->cmd_queue, & cmd); return; }
-    if (prog->input.inputs[BTN_SPACE])      return _get_shuffle(prog, 20, SPD1);
+    // if (Deq_len(& prog->cmdq.deq) > 1)      { return ; }
+    for (int k = CLR_R; k < CLR_$; k ++)
+    {
+        if      (prog->input.inputs[BTN_SHIFT] && prog->input.inputs[k]) cmd = (Cmd) {k, -1};
+        else if (prog->input.inputs[k]) cmd = (Cmd) {k, 1};
+    }
+    
+    if (cmd.dir && prog->cmdq.lock)
+    {
+        Cmdq_reset(& prog->cmdq);
+        Cmdq_push(& prog->cmdq, & cmd);
+    }
+    else if (cmd.dir && Deq_len(& prog->cmdq.deq) < 2)
+    { 
+        Cmdq_push(& prog->cmdq, & cmd); 
+    }
+    else if (prog->input.inputs[BTN_SHIFT] && (prog->cmdq.lock || Cmdq_empty(& prog->cmdq)))
+    {
+        Cmdq_reset(& prog->cmdq);
+        printf("calling suffle\n");
+        _get_shuffle(prog, 20);
+    }
 }
 
 void Prog_update(Prog * prog)
 {
     Cmd cmd;
 
-    if (! Deq_empty(& prog->cmd_queue) && ! Cube_in_animation(& prog->cube))
+    if (Cmdq_poppable(& prog->cmdq) && ! Cube_in_animation(& prog->cube))
     {
-        cmd = $drf(Cmd) Deq_popl(& prog->cmd_queue);
+        cmd = $drf(Cmd) Deq_popl(& prog->cmdq.deq);
         
-        Cube_rot(& prog->cube, cmd.clr, cmd.dir);
-        Repr_rot(& prog->repr, cmd.clr, cmd.dir);
+        Cube_rot(& prog->cube, cmd.clr, cmd.dir * prog->cmdq.vel);
+        Repr_rot(& prog->repr, cmd.clr, cmd.dir * prog->cmdq.vel);
 
         //
         // printf("CMD :      (%d %d)\n", cmd.clr, cmd.dir);
@@ -219,21 +286,23 @@ void Prog_update(Prog * prog)
     }
     else if (prog->input.inputs[BTN_TAB] && ! Cube_in_animation(& prog->cube))
     {
+        Cmdq_reset(& prog->cmdq);
         Cube_reset_clr(& prog->cube);
         Repr_init(& prog->repr, CUBE_CLR_STR);
     }
-    else if (prog->input.inputs[BTN_S] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
+    else if (prog->input.inputs[BTN_S] && ! Cube_in_animation(& prog->cube) && Cmdq_empty(& prog->cmdq))
     {
+        Cmdq_reset(& prog->cmdq);
+
         // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_rod);
-        Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_bars);
+        Solver_solve(& prog->solver, & prog->repr, & prog->cmdq.deq, Repr_score_bars);
         // Solver_solve(& prog->solver, & prog->repr, & prog->cmd_queue, Repr_score_cont_reg);
 
-        _queue_speed_adjust(prog, 4);
-
-        printf("sln len : %d\n", Deq_len(& prog->cmd_queue));
+        printf("sln len : %d\n", Deq_len(& prog->cmdq.deq));
     }
-    else if (prog->input.inputs[BTN_T] && ! Cube_in_animation(& prog->cube) && Deq_empty(& prog->cmd_queue))
+    else if (prog->input.inputs[BTN_T] && ! Cube_in_animation(& prog->cube) && Cmdq_empty(& prog->cmdq))
     {
+        Cmdq_reset(& prog->cmdq);
         _test(prog);
     }
 
